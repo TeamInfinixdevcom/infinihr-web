@@ -1,0 +1,124 @@
+<!-- Barra superior -->
+<mat-toolbar color="primary" class="topbar">
+  <span class="topbar__title">Recursos Humanos · Vacaciones</span>
+  <span class="spacer"></span>
+  <button mat-button (click)="refresh()">
+    <mat-icon>refresh</mat-icon>
+    Actualizar
+  </button>
+  <button mat-raised-button color="accent" (click)="openCreate()">
+    <mat-icon>add</mat-icon>
+    Nueva solicitud
+  </button>
+</mat-toolbar>
+
+<section class="page">
+  <!-- Filtros -->
+  <mat-card class="filters">
+    <div class="filters__row">
+      <mat-form-field appearance="outline">
+        <mat-label>Buscar</mat-label>
+        <input matInput placeholder="ID, empleado, estado…" (keyup)="applySearch($event)">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Estado</mat-label>
+        <mat-select [(value)]="filters.estado" (selectionChange)="applyFilters()">
+          <mat-option value="">Todos</mat-option>
+          <mat-option value="Pendiente">Pendiente</mat-option>
+          <mat-option value="Aprobado">Aprobado</mat-option>
+          <mat-option value="Rechazado">Rechazado</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Desde</mat-label>
+        <input matInput [matDatepicker]="dp1" [(ngModel)]="filters.desde" (dateChange)="applyFilters()">
+        <mat-datepicker-toggle matSuffix [for]="dp1"></mat-datepicker-toggle>
+        <mat-datepicker #dp1></mat-datepicker>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Hasta</mat-label>
+        <input matInput [matDatepicker]="dp2" [(ngModel)]="filters.hasta" (dateChange)="applyFilters()">
+        <mat-datepicker-toggle matSuffix [for]="dp2"></mat-datepicker-toggle>
+        <mat-datepicker #dp2></mat-datepicker>
+      </mat-form-field>
+
+      <span class="spacer"></span>
+      <button mat-stroked-button (click)="clearFilters()">
+        <mat-icon>filter_alt_off</mat-icon>
+        Limpiar
+      </button>
+    </div>
+  </mat-card>
+
+  <!-- Estados de carga / error -->
+  <div *ngIf="loading" class="state state--loading card">Cargando…</div>
+  <div *ngIf="!loading && error" class="state state--error card">{{ error }}</div>
+
+  <!-- Tabla -->
+  <mat-card class="card" *ngIf="!loading && !error">
+    <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z1">
+      <!-- ID -->
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
+        <td mat-cell *matCellDef="let v">{{ v.id }}</td>
+      </ng-container>
+
+      <!-- Empleado -->
+      <ng-container matColumnDef="empleadoId">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Empleado</th>
+        <td mat-cell *matCellDef="let v">{{ v.empleadoId }}</td>
+      </ng-container>
+
+      <!-- Inicio -->
+      <ng-container matColumnDef="fechaInicio">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Inicio</th>
+        <td mat-cell *matCellDef="let v">{{ v.fechaInicio | date:'yyyy-MM-dd' }}</td>
+      </ng-container>
+
+      <!-- Fin -->
+      <ng-container matColumnDef="fechaFin">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Fin</th>
+        <td mat-cell *matCellDef="let v">{{ v.fechaFin | date:'yyyy-MM-dd' }}</td>
+      </ng-container>
+
+      <!-- Estado -->
+      <ng-container matColumnDef="estado">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
+        <td mat-cell *matCellDef="let v">
+          <span class="badge"
+            [class.badge--ok]="v.estado==='Aprobado'"
+            [class.badge--warn]="v.estado==='Pendiente'"
+            [class.badge--no]="v.estado==='Rechazado'">
+            {{ v.estado }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Acciones -->
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef>Acciones</th>
+        <td mat-cell *matCellDef="let v">
+          <button mat-icon-button matTooltip="Editar" (click)="openEdit(v)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" matTooltip="Eliminar" (click)="confirmDelete(v)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="cols"></tr>
+      <tr mat-row        *matRowDef="let row; columns: cols"></tr>
+    </table>
+
+    <mat-paginator [pageSize]="10" [pageSizeOptions]="[5,10,25]"></mat-paginator>
+  </mat-card>
+
+  <!-- Empty state -->
+  <div *ngIf="!loading && !error && dataSource.data.length === 0" class="state card">
+    No hay solicitudes registradas.
+  </div>
+</section>

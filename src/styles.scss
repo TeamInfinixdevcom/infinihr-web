@@ -1,0 +1,17 @@
+@use '@angular/material' as mat;  /* debe ir primero y solo una vez */
+
+html {
+  @include mat.theme((
+    color: (theme-type: light),  // sin paletas custom por ahora
+    typography: Roboto,
+    density: -1
+  ));
+}
+
+/* Estilos globales opcionales */
+.container   { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+.card        { background:#fff; border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,.06); padding:12px; }
+.badge       { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#eef; }
+.badge--ok   { background:#e7f8ef; color:#0a7a3b; }
+.badge--warn { background:#fff6e5; color:#9a6400; }
+.badge--no   { background:#ffeaea; color:#b21e1e; }
