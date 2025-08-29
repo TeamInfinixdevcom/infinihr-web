@@ -1,0 +1,167 @@
+:host {
+    display: block;
+    padding: 24px 0;
+    background: #f4f6fa;
+    font-family: 'Roboto', 'Open Sans', Arial, sans-serif;
+    }
+
+    /* Barra superior */
+    .topbar {
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, #283e4a 80%, #4f6d7a 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(40,62,74,0.08);
+    }
+    .topbar__title {
+    font-size: 1.3rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    }
+    .spacer {
+    flex: 1 1 auto;
+    }
+
+    /* Página principal */
+    .page {
+    max-width: 900px;
+    margin: 32px auto;
+    }
+
+    /* Tarjetas y tablas */
+    .card {
+    border-radius: 8px;
+    margin-bottom: 16px;
+    padding: 8px 0;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(40,62,74,0.07);
+    }
+    .mat-table {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(40,62,74,0.07);
+    }
+    .mat-header-cell, .mat-cell {
+    padding: 14px 10px;
+    font-size: 1em;
+    }
+    .mat-header-row {
+    background: #e0e7ef;
+    }
+    .mat-row:hover {
+    background: #f5faff;
+    transition: background 0.2s;
+    }
+
+    /* Badges de estado */
+    .badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 14px;
+    font-size: 1em;
+    font-weight: 600;
+    background: #e0e7ef;
+    letter-spacing: 0.5px;
+    box-shadow: 0 1px 4px rgba(40,62,74,0.07);
+    }
+    .badge--ok {
+    color: #1976d2;
+    background: #e3f2fd;
+    }
+    .badge--warn {
+    color: #f9a825;
+    background: #fffde7;
+    }
+    .badge--no {
+    color: #d32f2f;
+    background: #ffebee;
+    }
+
+    /* Estados y mensajes */
+    .state {
+    text-align: center;
+    font-size: 1.1em;
+    padding: 24px 0;
+    }
+    .state--loading {
+    color: #757575;
+    }
+    .state--error {
+    color: #d32f2f;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+    .page {
+        max-width: 98vw;
+        margin: 8px;
+    }
+    .mat-header-cell, .mat-cell {
+        padding: 10px 4px;
+        font-size: 0.9em;
+    }
+    }
+
+    /* Estilos adicionales */
+    .container {
+    padding: 20px;
+    }
+
+    .actions-container {
+    margin-bottom: 20px;
+    }
+
+    .full-width {
+    width: 100%;
+    }
+
+    .loading-spinner {
+    display: flex;
+    justify-content: center;
+    margin: 30px 0;
+    }
+
+    .error-message {
+    color: #f44336;
+    padding: 16px;
+    margin: 16px 0;
+    background-color: rgba(244, 67, 54, 0.1);
+    border-radius: 4px;
+    }
+
+    .no-data {
+    padding: 20px;
+    text-align: center;
+    font-style: italic;
+    color: #777;
+    }
+
+    .estado-pendiente {
+    color: #f57c00;
+    font-weight: 500;
+    }
+
+    .estado-aprobado {
+    color: #4caf50;
+    font-weight: 500;
+    }
+
+    .estado-rechazado {
+    color: #f44336;
+    font-weight: 500;
+    }
+
+    table {
+    margin-top: 16px;
+    }
+
+    .mat-mdc-row:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+    }
+
+    .welcome-message {
+    margin-bottom: 20px;
+    color: #1976d2;
+    font-weight: 500;
+    }

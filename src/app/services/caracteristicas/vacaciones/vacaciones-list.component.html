@@ -1,18 +1,18 @@
-<!-- Barra superior -->
-<mat-toolbar color="primary" class="topbar">
-  <span class="topbar__title">Recursos Humanos · Vacaciones</span>
-  <span class="spacer"></span>
-  <button mat-button (click)="refresh()">
-    <mat-icon>refresh</mat-icon>
-    Actualizar
-  </button>
-  <button mat-raised-button color="accent" (click)="openCreate()">
-    <mat-icon>add</mat-icon>
-    Nueva solicitud
-  </button>
-</mat-toolbar>
+<div class="container">
+  <!-- Barra superior -->
+  <mat-toolbar color="primary" class="topbar">
+    <span class="topbar__title">Recursos Humanos · Vacaciones</span>
+    <span class="spacer"></span>
+    <button mat-button (click)="refresh()">
+      <mat-icon>refresh</mat-icon>
+      Actualizar
+    </button>
+    <button mat-raised-button color="accent" (click)="openCreate()">
+      <mat-icon>add</mat-icon>
+      Nueva solicitud
+    </button>
+  </mat-toolbar>
 
-<section class="page">
   <!-- Filtros -->
   <mat-card class="filters">
     <div class="filters__row">
@@ -23,7 +23,7 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Estado</mat-label>
-        <mat-select [(value)]="filters.estado" (selectionChange)="applyFilters()">
+        <mat-select [(ngModel)]="filters.estado" (selectionChange)="applyFilters()">
           <mat-option value="">Todos</mat-option>
           <mat-option value="Pendiente">Pendiente</mat-option>
           <mat-option value="Aprobado">Aprobado</mat-option>
@@ -33,14 +33,14 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Desde</mat-label>
-        <input matInput [matDatepicker]="dp1" [(ngModel)]="filters.desde" (dateChange)="applyFilters()">
+        <input matInput [matDatepicker]="dp1" [(ngModel)]="filters.desde" (dateChange)="applyFilters()" placeholder="Desde" title="Fecha de inicio">
         <mat-datepicker-toggle matSuffix [for]="dp1"></mat-datepicker-toggle>
         <mat-datepicker #dp1></mat-datepicker>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
         <mat-label>Hasta</mat-label>
-        <input matInput [matDatepicker]="dp2" [(ngModel)]="filters.hasta" (dateChange)="applyFilters()">
+        <input matInput [matDatepicker]="dp2" [(ngModel)]="filters.hasta" (dateChange)="applyFilters()" placeholder="Hasta" title="Fecha de fin">
         <mat-datepicker-toggle matSuffix [for]="dp2"></mat-datepicker-toggle>
         <mat-datepicker #dp2></mat-datepicker>
       </mat-form-field>
@@ -54,12 +54,16 @@
   </mat-card>
 
   <!-- Estados de carga / error -->
-  <div *ngIf="loading" class="state state--loading card">Cargando…</div>
+  <div *ngIf="loading" class="state state--loading card">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Cargando...</p>
+  </div>
+  
   <div *ngIf="!loading && error" class="state state--error card">{{ error }}</div>
 
   <!-- Tabla -->
   <mat-card class="card" *ngIf="!loading && !error">
-    <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z1">
+    <table mat-table [dataSource]="vacaciones" matSort class="mat-elevation-z1">
       <!-- ID -->
       <ng-container matColumnDef="id">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
@@ -111,14 +115,14 @@
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="cols"></tr>
-      <tr mat-row        *matRowDef="let row; columns: cols"></tr>
+      <tr mat-row *matRowDef="let row; columns: cols"></tr>
     </table>
 
     <mat-paginator [pageSize]="10" [pageSizeOptions]="[5,10,25]"></mat-paginator>
+    
+    <!-- Empty state -->
+    <div *ngIf="vacaciones.length === 0" class="no-data">
+      No hay solicitudes de vacaciones para mostrar.
+    </div>
   </mat-card>
-
-  <!-- Empty state -->
-  <div *ngIf="!loading && !error && dataSource.data.length === 0" class="state card">
-    No hay solicitudes registradas.
-  </div>
-</section>
+</div>

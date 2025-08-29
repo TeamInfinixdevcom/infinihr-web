@@ -1,0 +1,23 @@
+<mat-card>
+    <form (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="fill">
+        <mat-label>Usuario</mat-label>
+        <input matInput [(ngModel)]="username" name="username" required>
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+        <mat-label>Contraseña</mat-label>
+        <input matInput [(ngModel)]="password" name="password" type="password" required>
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+        <mat-label>Identificarse como</mat-label>
+        <mat-select [(ngModel)]="selectedRole" name="selectedRole" required>
+            <mat-option value="admin">Administrador</mat-option>
+            <mat-option value="empleado">Empleado</mat-option>
+        </mat-select>
+        </mat-form-field>
+        <button mat-raised-button color="primary" type="submit">Ingresar</button>
+    </form>
+    <button mat-raised-button color="accent" type="button" style="margin-top:10px;" (click)="irVistaEmpleado()">
+      Ir a vista empleado (prueba)
+    </button>
+    </mat-card>

@@ -1,175 +1,171 @@
-    import { Component, Inject } from '@angular/core';
-    import { CommonModule } from '@angular/common';
-    import {
-    FormBuilder,
-    ReactiveFormsModule,
-    Validators,
-    AbstractControl,
-    ValidationErrors,
-    ValidatorFn,
-    FormGroup,
-    } from '@angular/forms';
+import { Component, Inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatSelectModule } from '@angular/material/select';
+import { VacacionForm } from './vacaciones-list.component';
 
-    import {
-    MAT_DIALOG_DATA,
+@Component({
+  selector: 'app-vacaciones-dialog',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
     MatDialogModule,
-    MatDialogRef,
-    } from '@angular/material/dialog';
-    import { MatFormFieldModule }  from '@angular/material/form-field';
-    import { MatInputModule }      from '@angular/material/input';
-    import { MatSelectModule }     from '@angular/material/select';
-    import { MatDatepickerModule } from '@angular/material/datepicker';
-    import { MatNativeDateModule } from '@angular/material/core';
-    import { MatButtonModule }     from '@angular/material/button';
-
-    export type VacacionForm = {
-    id?: number;
-    empleadoId: number;
-    fechaInicio: string | Date;
-    fechaFin: string | Date;
-    estado: 'Pendiente' | 'Aprobado' | 'Rechazado';
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatSelectModule
+  ],
+  template: `
+    <h2 mat-dialog-title>{{ data.id ? 'Editar' : 'Nueva' }} solicitud de vacaciones</h2>
+    <mat-dialog-content>
+      <form #vacacionForm="ngForm">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Fecha de inicio</mat-label>
+          <input matInput [matDatepicker]="startPicker" [(ngModel)]="data.fechaInicio" name="fechaInicio" required>
+          <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+          <mat-datepicker #startPicker></mat-datepicker>
+          <mat-error>La fecha de inicio es obligatoria</mat-error>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Fecha de fin</mat-label>
+          <input matInput [matDatepicker]="endPicker" [(ngModel)]="data.fechaFin" name="fechaFin" required>
+          <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+          <mat-datepicker #endPicker></mat-datepicker>
+          <mat-error>La fecha de fin es obligatoria</mat-error>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Motivo</mat-label>
+          <textarea matInput [(ngModel)]="data.motivo" name="motivo" rows="3"></textarea>
+          <mat-error>El motivo es obligatorio</mat-error>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Días</mat-label>
+          <input matInput type="number" [(ngModel)]="data.dias" name="dias" min="1" readonly>
+          <mat-hint>Número de días de vacaciones</mat-hint>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" class="full-width" *ngIf="data.id">
+          <mat-label>Estado</mat-label>
+          <mat-select [(ngModel)]="data.estado" name="estado" required>
+            <mat-option value="Pendiente">Pendiente</mat-option>
+            <mat-option value="Aprobado">Aprobado</mat-option>
+            <mat-option value="Rechazado">Rechazado</mat-option>
+          </mat-select>
+          <mat-error>El estado es obligatorio</mat-error>
+        </mat-form-field>
+      </form>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button (click)="onCancel()">Cancelar</button>
+      <button mat-raised-button color="primary" [disabled]="vacacionForm.invalid" (click)="onSubmit()">
+        {{ data.id ? 'Actualizar' : 'Crear' }}
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: [`
+    .full-width {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    mat-dialog-content {
+      min-width: 300px;
+      max-width: 500px;
+    }
+  `]
+})
+export class VacacionesDialogComponent implements OnInit {
+  constructor(
+    public dialogRef: MatDialogRef<VacacionesDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: VacacionForm
+  ) {
+    // Inicializar con valores por defecto si es necesario
+    this.data = {
+      ...{
+        fechaInicio: '',
+        fechaFin: '',
+        motivo: '',
+        estado: 'Pendiente'
+      },
+      ...this.data
     };
+  }
 
-    /* ---------- utils / validadores ---------- */
-    const rangoFechasValido: ValidatorFn = (
-    ctrl: AbstractControl
-    ): ValidationErrors | null => {
-    const g: any = ctrl;
-    const ini = g.get?.('fechaInicio')?.value as Date | string | null;
-    const fin = g.get?.('fechaFin')?.value as Date | string | null;
-    if (!ini || !fin) return null;
+  ngOnInit() {
+    // Calcular días automáticamente cuando cambian las fechas
+    Object.defineProperty(this.data, 'fechaInicio', {
+      set: (value: any) => {
+        this._fechaInicio = value;
+        this.calcularDias();
+      },
+      get: () => this._fechaInicio,
+      configurable: true
+    });
+    Object.defineProperty(this.data, 'fechaFin', {
+      set: (value: any) => {
+        this._fechaFin = value;
+        this.calcularDias();
+      },
+      get: () => this._fechaFin,
+      configurable: true
+    });
+    this._fechaInicio = this.data.fechaInicio;
+    this._fechaFin = this.data.fechaFin;
+  }
 
-    const d1 = typeof ini === 'string' ? new Date(ini) : ini;
-    const d2 = typeof fin === 'string' ? new Date(fin) : fin;
-    if (isNaN(d1?.getTime?.()) || isNaN(d2?.getTime?.())) return null;
+  private _fechaInicio: any;
+  private _fechaFin: any;
 
-    return d2 >= d1 ? null : { rangoFecha: true };
-    };
-
-    function toISO(d: string | Date | null | undefined): string | null {
-    if (!d) return null;
-    const date = typeof d === 'string' ? new Date(d) : d;
-    if (isNaN(date.getTime())) return null;
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    return `${date.getFullYear()}-${mm}-${dd}`; // yyyy-MM-dd
+  calcularDias() {
+    if (this._fechaInicio && this._fechaFin) {
+      const inicio = new Date(this._fechaInicio);
+      const fin = new Date(this._fechaFin);
+      const diff = (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24);
+      this.data.dias = diff >= 0 ? diff + 1 : 1;
+    } else {
+      this.data.dias = 1;
     }
+  }
 
-    /* ================== COMPONENTE ================== */
-    @Component({
-    selector: 'app-vacaciones-dialog',
-    standalone: true,
-    imports: [
-        CommonModule,
-        ReactiveFormsModule,
-        MatDialogModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatSelectModule,
-        MatDatepickerModule,
-        MatNativeDateModule,
-        MatButtonModule,
-    ],
-    template: `
-        <h2 mat-dialog-title>{{ data?.id ? 'Editar' : 'Nueva' }} solicitud de vacaciones</h2>
+  onCancel(): void {
+    this.dialogRef.close();
+  }
 
-        <form [formGroup]="form" class="dialog-form" mat-dialog-content>
-        <mat-form-field appearance="outline">
-            <mat-label>Empleado ID</mat-label>
-            <input matInput type="number" formControlName="empleadoId" required>
-            <mat-error *ngIf="fc.empleadoId.touched && fc.empleadoId.hasError('required')">
-            El empleado es obligatorio.
-            </mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-            <mat-label>Inicio</mat-label>
-            <input matInput [matDatepicker]="dp1" formControlName="fechaInicio" required>
-            <mat-datepicker-toggle matSuffix [for]="dp1"></mat-datepicker-toggle>
-            <mat-datepicker #dp1></mat-datepicker>
-            <mat-error *ngIf="fc.fechaInicio.touched && fc.fechaInicio.hasError('required')">
-            La fecha de inicio es obligatoria.
-            </mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-            <mat-label>Fin</mat-label>
-            <input matInput [matDatepicker]="dp2" formControlName="fechaFin" required>
-            <mat-datepicker-toggle matSuffix [for]="dp2"></mat-datepicker-toggle>
-            <mat-datepicker #dp2></mat-datepicker>
-            <mat-error *ngIf="fc.fechaFin.touched && fc.fechaFin.hasError('required')">
-            La fecha de fin es obligatoria.
-            </mat-error>
-            <mat-error *ngIf="form.touched && form.hasError('rangoFecha')">
-            La fecha fin debe ser mayor o igual a la fecha inicio.
-            </mat-error>
-        </mat-form-field>
-            <mat-form-field appearance="outline">
-            <mat-label>Estado</mat-label>
-            <mat-select formControlName="estado" required>
-                <mat-option value="Pendiente">Pendiente</mat-option>
-                <mat-option value="Aprobado">Aprobado</mat-option>
-                <mat-option value="Rechazado">Rechazado</mat-option>
-            </mat-select>
-            <mat-error *ngIf="fc.estado.touched && fc.estado.hasError('required')">
-                Seleccione un estado.
-            </mat-error>
-            </mat-form-field>
-
-
-        <div mat-dialog-actions align="end">
-        <button mat-button mat-dialog-close>Cancelar</button>
-        <button mat-raised-button color="primary" [disabled]="form.invalid" (click)="save()">
-            Guardar
-        </button>
-        </div>
-    `,
-    styles: [`
-        .dialog-form {
-        display: grid;
-        gap: 12px;
-        grid-template-columns: 1fr 1fr;
-        padding-top: 4px;
-        }
-        @media (max-width: 800px) { .dialog-form { grid-template-columns: 1fr; } }
-    `],
-    })
-    export class VacacionesDialogComponent {
-    // Declaramos sin inicializar; se crea dentro del constructor
-    form!: FormGroup;
-
-    get fc() { return (this.form.controls as any); }
-
-    constructor(
-        private fb: FormBuilder,
-        private ref: MatDialogRef<VacacionesDialogComponent>,
-        @Inject(MAT_DIALOG_DATA) public data: Partial<VacacionForm> | null
-    ) {
-        // AHORA sí construimos el form (ya existen fb y data)
-        this.form = this.fb.group(
-        {
-            id:          [this.data?.id ?? null],
-            empleadoId:  [this.data?.empleadoId ?? null, [Validators.required]],
-            fechaInicio: [this.data?.fechaInicio ?? null, [Validators.required]],
-            fechaFin:    [this.data?.fechaFin ?? null, [Validators.required]],
-            estado:      [this.data?.estado ?? 'Pendiente', [Validators.required]],
-        },
-        { validators: rangoFechasValido }
-        );
+  onSubmit(): void {
+    // Formatear fechas si es necesario
+    const { fechaInicio, fechaFin } = this.data;
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+    let inicio = fechaInicio;
+    let fin = fechaFin;
+    if (fechaInicio && typeof fechaInicio !== 'string') {
+      inicio = new Date(fechaInicio).toISOString().split('T')[0];
+      this.data.fechaInicio = inicio;
     }
-
-    save(): void {
-        if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-
-        const v = this.form.value;
-        const payload: VacacionForm = {
-        id: v['id'] ?? undefined,
-        empleadoId: Number(v['empleadoId']),
-        fechaInicio: toISO(v['fechaInicio'])!,
-        fechaFin: toISO(v['fechaFin'])!,
-        estado: v['estado'] as VacacionForm['estado'],
-        };
-
-        this.ref.close(payload);
+    if (fechaFin && typeof fechaFin !== 'string') {
+      fin = new Date(fechaFin).toISOString().split('T')[0];
+      this.data.fechaFin = fin;
     }
+    // Validar fechas correctamente
+    if (new Date(inicio) < hoy) {
+      alert('La fecha de inicio no puede ser en el pasado');
+      return;
     }
+    if (new Date(fin) < new Date(inicio)) {
+      alert('La fecha de fin debe ser posterior a la fecha de inicio');
+      return;
+    }
+    this.dialogRef.close(this.data);
+  }
+}

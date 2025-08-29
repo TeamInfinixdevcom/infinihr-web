@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Vacaciones</title>
+</head>
+<body>
+    <h1>Test API Vacaciones</h1>
+    <button onclick="testLogin()">1. Test Login</button>
+    <button onclick="testCreateVacacion()">2. Test Crear Vacación</button>
+    <div id="result"></div>
+
+    <script>
+        let token = '';
+        
+        async function testLogin() {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'empleado',
+                        password: 'empleado'
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Login response:', data);
+                
+                if (data.token) {
+                    token = data.token;
+                    localStorage.setItem('token', token);
+                    document.getElementById('result').innerHTML = 
+                        `<p>Login exitoso! Token: ${token.substring(0, 20)}...</p>`;
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        `<p>Error en login: ${JSON.stringify(data)}</p>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = 
+                    `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testCreateVacacion() {
+            if (!token) {
+                token = localStorage.getItem('token');
+            }
+            
+            const vacacionData = {
+                empleadoId: 2, // ID del empleado en la BD (camelCase)
+                fechaInicio: '2025-08-29',
+                fechaFin: '2025-09-01',
+                motivo: 'Vacaciones de prueba',
+                estado: 'Pendiente'
+            };
+            
+            try {
+                console.log('Enviando datos:', vacacionData);
+                console.log('Token usado:', token);
+                
+                const response = await fetch('/api/vacaciones', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(vacacionData)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+                
+                if (response.ok) {
+                    document.getElementById('result').innerHTML = 
+                        `<p>✅ Vacación creada exitosamente: ${responseText}</p>`;
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        `<p>❌ Error ${response.status}: ${responseText}</p>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = 
+                    `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
