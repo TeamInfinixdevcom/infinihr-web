@@ -75,7 +75,9 @@
                     <ng-container matColumnDef="fechaAprobacion">
                         <th mat-header-cell *matHeaderCellDef>Fecha Aprobación</th>
                         <td mat-cell *matCellDef="let element">
-                            <span *ngIf="element.fechaAprobacion; else dash">{{ element.fechaAprobacion | date:'dd/MM/yyyy HH:mm' }}</span>
+                            <span *ngIf="element.fechaAprobacion && element.fechaAprobacion !== null && element.fechaAprobacion !== 'null'; else dash">
+                                {{ element.fechaAprobacion | date:'dd/MM/yyyy HH:mm' }}
+                            </span>
                             <ng-template #dash>-</ng-template>
                         </td>
                     </ng-container>

@@ -51,7 +51,22 @@ export class VacacionesService extends BaseCrudService<Vacacion> {
     const url = `${this.apiUrl}/empleado`;
     console.log('Solicitando vacaciones del empleado autenticado a:', url);
     return this.http.get<Vacacion[]>(url).pipe(
-      tap(v => console.log('Vacaciones recibidas (empleado):', v)),
+      tap(v => {
+        console.log('Vacaciones recibidas (empleado):', v);
+        
+        // VERIFICAR SI EL BACKEND ENVÍA fechaAprobacion
+        console.log('🔍 VERIFICACIÓN BACKEND:');
+        v.forEach((vacacion, index) => {
+          console.log(`📋 Vacación ${vacacion.id}:`, {
+            estado: vacacion.estado,
+            fechaAprobacion: vacacion.fechaAprobacion,
+            type: typeof vacacion.fechaAprobacion,
+            isNull: vacacion.fechaAprobacion === null,
+            isUndefined: vacacion.fechaAprobacion === undefined,
+            keys: Object.keys(vacacion)
+          });
+        });
+      }),
       catchError(error => {
         console.error('Error en getVacacionesEmpleado:', error);
         return throwError(() => new Error('Error al obtener las vacaciones del empleado.'));

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Backend Vacaciones</title>
+</head>
+<body>
+    <h1>Test Backend - Verificar fechaAprobacion</h1>
+    <div id="results"></div>
+    <button onclick="testBackend()">Probar Backend</button>
+    
+    <script>
+        async function testBackend() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>🔍 Probando backend...</p>';
+            
+            try {
+                // 1. Login
+                console.log('🔑 Haciendo login...');
+                const loginResponse = await fetch('http://localhost:8082/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: 'ana.mora',
+                        password: 'password123'
+                    })
+                });
+                
+                if (!loginResponse.ok) {
+                    throw new Error(`Login failed: ${loginResponse.status}`);
+                }
+                
+                const loginData = await loginResponse.json();
+                console.log('✅ Login exitoso:', loginData);
+                
+                if (!loginData.token) {
+                    throw new Error('No token received');
+                }
+                
+                // 2. Get vacaciones empleado
+                console.log('📋 Obteniendo vacaciones del empleado...');
+                const vacacionesResponse = await fetch('http://localhost:8082/api/vacaciones/empleado', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${loginData.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!vacacionesResponse.ok) {
+                    throw new Error(`Vacaciones failed: ${vacacionesResponse.status}`);
+                }
+                
+                const vacaciones = await vacacionesResponse.json();
+                console.log('📋 Vacaciones recibidas:', vacaciones);
+                
+                // 3. Análisis detallado
+                results.innerHTML = '<h2>✅ Resultados:</h2>';
+                results.innerHTML += `<p><strong>Total vacaciones:</strong> ${vacaciones.length}</p>`;
+                
+                vacaciones.forEach((v, index) => {
+                    results.innerHTML += `
+                        <div style="border: 1px solid #ccc; margin: 10px 0; padding: 10px;">
+                            <h3>Vacación ${v.id}</h3>
+                            <p><strong>Estado:</strong> ${v.estado}</p>
+                            <p><strong>fechaAprobacion:</strong> ${v.fechaAprobacion || 'NULL/UNDEFINED'}</p>
+                            <p><strong>Tipo:</strong> ${typeof v.fechaAprobacion}</p>
+                            <p><strong>Campos disponibles:</strong> ${Object.keys(v).join(', ')}</p>
+                            <p><strong>JSON completo:</strong> <code>${JSON.stringify(v, null, 2)}</code></p>
+                        </div>
+                    `;
+                });
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                results.innerHTML += `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -56,37 +56,54 @@ export const authInterceptor: HttpInterceptorFn = (
           status: error.status,
           statusText: error.statusText,
           message: error.message,
-          error: error.error
+          hasToken: !!token
         });
 
-        // No interceptar errores en el login
+        // No interceptar errores en el login - dejar que los maneje el componente
         if (request.url.includes('/api/auth/login')) {
           return throwError(() => error);
         }
 
+        // Para logout, NO redirigir nunca - el AuthService ya maneja la limpieza
+        if (request.url.includes('/api/auth/logout')) {
+          console.warn('⚠️ Error en logout - ignorando (sesión ya limpiada localmente)');
+          return throwError(() => error);
+        }
+
+        // Para otros endpoints, manejar según el tipo de error
         if (error.status === 401) {
           console.error('🔐 Token expirado o inválido. Cerrando sesión...');
-          localStorage.clear();
-          router.navigate(['/login']);
+          if (!request.url.includes('/api/auth/')) {
+            localStorage.clear();
+            router.navigate(['/login']);
+          }
         } else if (error.status === 403) {
-          if (!request.url.includes('/api/auth/validate')) {
+          // Solo para endpoints que NO son de autenticación
+          if (!request.url.includes('/api/auth/')) {
             console.error(`🚫 Acceso denegado a ${request.url}`);
             console.error(`🔑 Token presente: ${token ? 'Sí' : 'NO'}`);
+            
             if (!token) {
-              console.error('❌ ERROR CRÍTICO: Solicitud sin token. Redirigiendo al login...');
+              console.error('❌ Solicitud sin token. Redirigiendo al login...');
               localStorage.clear();
               router.navigate(['/login']);
             } else {
-              console.warn('⚠️ Se recibió 403 pero existe token — puede que el servidor esté rechazando por roles/permiso');
+              console.warn('⚠️ 403 con token presente. NO redirigiendo automáticamente.');
+              console.warn('   • Puede ser un problema temporal del servidor');
+              console.warn('   • O permisos insuficientes para esta operación específica');
+              console.warn('   • El usuario puede intentar recargar o hacer logout manual');
             }
+          } else {
+            console.warn('⚠️ Error 403 en endpoint de autenticación - ignorando para evitar loops');
           }
         } else if (error.status === 500) {
           console.error('⚠️ Error interno del servidor:', error.error);
         } else if (error.status === 0) {
-          console.error('🌐 No hay conexión con el servidor');
+          console.error('🌐 No hay conexión con el servidor o CORS error');
         } else {
           console.error(`❌ Error ${error.status} en ${request.url}:`, error.error);
         }
+        
         return throwError(() => error);
       }),
       finalize(() => {

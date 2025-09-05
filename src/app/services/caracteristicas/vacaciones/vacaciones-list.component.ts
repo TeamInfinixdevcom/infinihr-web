@@ -62,13 +62,13 @@ export interface VacacionForm {
 })
 export class VacacionesListComponent implements OnInit {
   vacaciones: Vacacion[] = [];
-  displayedColumns: string[] = ['id', 'empleado', 'fechaInicio', 'fechaFin', 'estado', 'motivo', 'acciones'];
+  displayedColumns: string[] = ['id', 'empleado', 'fechaInicio', 'fechaFin', 'estado', 'fechaAprobacion', 'acciones'];
   loading = false;
   error = '';
   dataSource = new MatTableDataSource<Vacacion>([]);
   
   // Variables para la interfaz completa
-  cols: string[] = ['id', 'empleadoId', 'fechaInicio', 'fechaFin', 'estado', 'acciones'];
+  cols: string[] = ['id', 'empleadoId', 'fechaInicio', 'fechaFin', 'estado', 'fechaAprobacion', 'acciones'];
   filters: any = {
     estado: '',
     desde: null,

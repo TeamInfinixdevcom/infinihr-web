@@ -129,22 +129,30 @@ export class AuthService {
   logout(): void {
     console.log('🚪 Cerrando sesión...');
     const token = this.getToken();
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+    
+    // Primero limpiar los datos locales para evitar loops
+    this.clearAuthData();
+    this.isAuthenticatedSubject.next(false);
+    
+    // Luego intentar notificar al servidor (opcional)
+    if (token) {
+      const headers = new HttpHeaders({ 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      });
 
-    // Notificar al servidor antes de limpiar la sesión local. Limpiar en cualquier caso.
-    this.http.post(`${this.authUrl}/logout`, {}, headers ? { headers } : {}).subscribe({
-      next: () => {
-        console.log('✅ Logout notificado al servidor');
-        this.clearAuthData();
-        this.isAuthenticatedSubject.next(false);
-      },
-      error: (err) => {
-        console.log('⚠️ Error al notificar logout:', err?.status);
-        // Limpiar la sesión local igualmente para evitar loops de petición sin token
-        this.clearAuthData();
-        this.isAuthenticatedSubject.next(false);
-      }
-    });
+      this.http.post(`${this.authUrl}/logout`, {}, { headers }).subscribe({
+        next: () => {
+          console.log('✅ Logout notificado al servidor');
+        },
+        error: (err) => {
+          console.log('⚠️ Error al notificar logout (ignorado):', err?.status);
+          // Ya limpiamos los datos, así que este error no importa
+        }
+      });
+    } else {
+      console.log('ℹ️ No hay token para logout del servidor');
+    }
   }
 
   private clearAuthData(): void {
