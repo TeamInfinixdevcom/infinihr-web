@@ -21,11 +21,13 @@ export const authInterceptor: HttpInterceptorFn = (
 
   // Si la URL es de login, no se añade el token.
   if (req.url.includes('/api/auth/login')) {
+    console.log('🔓 Interceptor: petición de login detectada, no se añade token');
     return next(req);
   }
 
   // Si existe un token, se clona la solicitud y se añade el encabezado de autorización.
   if (token) {
+    console.log('🔑 Interceptor: Token encontrado en AuthService');
     const clonedReq = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`,

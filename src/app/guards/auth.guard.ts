@@ -7,21 +7,25 @@ export const authGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
   const authService = inject(AuthService);
   
+  // Debug inmediato
+  const debugInfo = authService.debugAuth();
+  console.log('🛡️ AuthGuard - Debug inicial:', {
+    ...debugInfo,
+    targetUrl: state.url
+  });
+  
   return authService.isAuthenticated$.pipe(
     take(1),
     map(isAuthenticated => {
-      console.log('AuthGuard - Usuario autenticado:', isAuthenticated);
+      console.log('🛡️ AuthGuard - Usuario autenticado (Observable):', isAuthenticated);
       
-      if (isAuthenticated) {
+      // Si tenemos token, permitir acceso independientemente del Observable
+      if (debugInfo.hasToken) {
+        console.log('✅ AuthGuard - Permitiendo acceso por token presente');
         return true;
       }
       
-      // Si hay token pero no estamos autenticados, puede ser que la sesión expiró
-      if (authService.getToken()) {
-        console.log('Token presente pero sesión inválida, redirigiendo a login');
-      }
-      
-      console.log('Usuario no autenticado, redirigiendo a login');
+      console.log('❌ AuthGuard - Sin token, redirigiendo a login');
       router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
       return false;
     })

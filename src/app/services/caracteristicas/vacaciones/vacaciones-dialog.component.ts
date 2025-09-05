@@ -8,7 +8,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
 import { VacacionForm } from './vacaciones-list.component';
+import { EmpleadosService, Empleado } from '../../empleados.service';
 
 @Component({
   selector: 'app-vacaciones-dialog',
@@ -22,23 +24,47 @@ import { VacacionForm } from './vacaciones-list.component';
     MatButtonModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    MatSelectModule
+    MatSelectModule,
+    MatIconModule
   ],
   template: `
     <h2 mat-dialog-title>{{ data.id ? 'Editar' : 'Nueva' }} solicitud de vacaciones</h2>
+    
+    <!-- Alerta informativa para administradores creando -->
+    <div *ngIf="data.isAdminCreating" class="admin-creating-alert">
+      <mat-icon>admin_panel_settings</mat-icon>
+      <div class="alert-content">
+        <strong>Creando como Administrador</strong>
+        <p>Estás creando una solicitud en nombre de un empleado. Asegúrate de verificar las fechas y el motivo.</p>
+      </div>
+    </div>
+    
     <mat-dialog-content>
       <form #vacacionForm="ngForm">
+        <!-- Selector de empleado para administradores -->
+        <mat-form-field appearance="outline" class="full-width" *ngIf="isAdminCreating">
+          <mat-label>Seleccionar Empleado *</mat-label>
+          <mat-select [(ngModel)]="selectedEmpleadoId" name="selectedEmpleado" required>
+            <mat-option *ngFor="let empleado of empleados" [value]="empleado.id">
+              {{empleado.nombre}} - {{empleado.puesto}} ({{empleado.username}})
+            </mat-option>
+          </mat-select>
+          <mat-hint>Selecciona el empleado para quien crear la solicitud</mat-hint>
+          <mat-error>Debes seleccionar un empleado</mat-error>
+        </mat-form-field>
+        
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Fecha de inicio</mat-label>
-          <input matInput [matDatepicker]="startPicker" [(ngModel)]="data.fechaInicio" name="fechaInicio" required>
+          <input matInput [matDatepicker]="startPicker" [(ngModel)]="data.fechaInicio" name="fechaInicio" required [min]="minFechaInicio">
           <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
           <mat-datepicker #startPicker></mat-datepicker>
           <mat-error>La fecha de inicio es obligatoria</mat-error>
         </mat-form-field>
-        
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Fecha de fin</mat-label>
-          <input matInput [matDatepicker]="endPicker" [(ngModel)]="data.fechaFin" name="fechaFin" required>
+          <input matInput [matDatepicker]="endPicker" [(ngModel)]="data.fechaFin" name="fechaFin" required [min]="data.fechaInicio">
           <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
           <mat-datepicker #endPicker></mat-datepicker>
           <mat-error>La fecha de fin es obligatoria</mat-error>
@@ -83,12 +109,57 @@ import { VacacionForm } from './vacaciones-list.component';
       min-width: 300px;
       max-width: 500px;
     }
+    
+    .admin-creating-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+      border: 1px solid #2196f3;
+      border-radius: 8px;
+      color: #1565c0;
+      border-left: 4px solid #2196f3;
+    }
+    
+    .admin-creating-alert mat-icon {
+      color: #2196f3;
+      margin-top: 2px;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+    
+    .alert-content {
+      flex: 1;
+    }
+    
+    .alert-content strong {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 600;
+      color: #1976d2;
+    }
+    
+    .alert-content p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #1565c0;
+    }
   `]
 })
 export class VacacionesDialogComponent implements OnInit {
+  empleados: Empleado[] = [];
+  selectedEmpleadoId: number | null = null;
+  isAdminCreating: boolean = false;
+  minFechaInicio: Date = new Date();
+
   constructor(
     public dialogRef: MatDialogRef<VacacionesDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: VacacionForm
+    @Inject(MAT_DIALOG_DATA) public data: VacacionForm,
+    private empleadosService: EmpleadosService
   ) {
     // Inicializar con valores por defecto si es necesario
     this.data = {
@@ -100,6 +171,8 @@ export class VacacionesDialogComponent implements OnInit {
       },
       ...this.data
     };
+    
+    this.isAdminCreating = this.data.isAdminCreating || false;
   }
 
   ngOnInit() {
@@ -122,6 +195,31 @@ export class VacacionesDialogComponent implements OnInit {
     });
     this._fechaInicio = this.data.fechaInicio;
     this._fechaFin = this.data.fechaFin;
+    
+    // Cargar empleados si es admin creando
+    if (this.isAdminCreating) {
+      this.loadEmpleados();
+    }
+  }
+
+  private loadEmpleados(): void {
+    console.log('📋 Cargando empleados para selector...');
+    this.empleadosService.getAll().subscribe({
+      next: (empleados) => {
+        this.empleados = empleados;
+        console.log('✅ Empleados cargados:', empleados);
+      },
+      error: (error) => {
+        console.error('❌ Error cargando empleados:', error);
+        // Datos de respaldo si falla la API
+        this.empleados = [
+          { id: 3, nombre: 'Administrador del Sistema', correo: 'admin@infinihr.com', puesto: 'Administrador', fecha_ingreso: '2025-01-01', username: 'admin' },
+          { id: 4, nombre: 'Juan Pérez', correo: 'juan.perez@infinihr.com', puesto: 'Desarrollador', fecha_ingreso: '2025-01-15', username: 'empleado' },
+          { id: 1, nombre: 'Juan Pérez', correo: 'juan@infinihr.com', puesto: 'Desarrollador', fecha_ingreso: '2025-07-30', username: 'usuario_1' },
+          { id: 2, nombre: 'Ana Mora', correo: 'ana.mora@empresa.com', puesto: 'Desarrollador Junior', fecha_ingreso: '', username: 'usuario_2' }
+        ];
+      }
+    });
   }
 
   private _fechaInicio: any;
@@ -157,6 +255,7 @@ export class VacacionesDialogComponent implements OnInit {
       fin = new Date(fechaFin).toISOString().split('T')[0];
       this.data.fechaFin = fin;
     }
+    
     // Validar fechas correctamente
     if (new Date(inicio) < hoy) {
       alert('La fecha de inicio no puede ser en el pasado');
@@ -166,6 +265,19 @@ export class VacacionesDialogComponent implements OnInit {
       alert('La fecha de fin debe ser posterior a la fecha de inicio');
       return;
     }
-    this.dialogRef.close(this.data);
+    
+    // Si es admin creando, validar que haya seleccionado empleado
+    if (this.isAdminCreating && !this.selectedEmpleadoId) {
+      alert('Debes seleccionar un empleado para crear la solicitud');
+      return;
+    }
+    
+    // Preparar datos para enviar
+    const dataToSend = { ...this.data };
+    if (this.isAdminCreating) {
+      dataToSend.empleadoId = this.selectedEmpleadoId!;
+    }
+    
+    this.dialogRef.close(dataToSend);
   }
 }

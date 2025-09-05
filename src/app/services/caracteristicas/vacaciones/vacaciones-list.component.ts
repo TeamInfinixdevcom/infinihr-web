@@ -20,6 +20,8 @@ import { MatNativeDateModule } from '@angular/material/core';
 
 import { VacacionesService, Vacacion } from '../../vacaciones.service';
 import { VacacionesDialogComponent } from './vacaciones-dialog.component';
+import { VacacionesAdminDialogComponent } from './vacaciones-admin-dialog.component';
+import { AuthService } from '../../auth/auth.service';
 
 export interface VacacionForm {
   id?: number;
@@ -29,6 +31,7 @@ export interface VacacionForm {
   dias?: number | null;
   motivo: string | null;
   estado: string;
+  isAdminCreating?: boolean; // Nueva propiedad para indicar creación por admin
 }
 
 @Component({
@@ -78,11 +81,34 @@ export class VacacionesListComponent implements OnInit {
   constructor(
     public api: VacacionesService,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private authService: AuthService
   ) { }
 
   ngOnInit(): void {
-    this.loadVacaciones();
+    this.loadData();
+  }
+
+  loadData(): void {
+    this.loading = true;
+    
+    // Usar método específico que filtra por empleado
+    this.api.getVacacionesEmpleadoActual().subscribe({
+      next: (data) => {
+        this.dataSource.data = data;
+        this.loading = false;
+        console.log('📋 Vacaciones cargadas:', data);
+      },
+      error: (error) => {
+        console.error('❌ Error cargando vacaciones:', error);
+        this.loading = false;
+      }
+    });
+  }
+
+  isAdmin(): boolean {
+    const userRole = this.authService.getRol()?.toLowerCase() || '';
+    return userRole.includes('admin') || userRole.includes('role_admin');
   }
 
   loadVacaciones(): void {
@@ -155,7 +181,8 @@ export class VacacionesListComponent implements OnInit {
   }
   
   openCreate(): void {
-    this.openDialog();
+    // Crear nueva solicitud con indicador de admin
+    this.openDialog(undefined, true);
   }
   
   openEdit(vacacion: Vacacion): void {
@@ -188,10 +215,20 @@ export class VacacionesListComponent implements OnInit {
     }
   }
 
-  openDialog(vacacion?: Vacacion): void {
+  openDialog(vacacion?: Vacacion, isNewFromAdmin?: boolean): void {
+    const userRole = this.authService.getRol()?.toLowerCase() || '';
+    const isAdmin = userRole.includes('admin') || userRole.includes('role_admin');
+    
+    // Si es admin y está editando una vacación existente, usar el diálogo de admin
+    if (isAdmin && vacacion) {
+      this.openAdminDialog(vacacion);
+      return;
+    }
+    
+    // Para crear nuevas vacaciones o si no es admin, usar el diálogo normal
     const data: VacacionForm = vacacion ? { 
       id: vacacion.id,
-      empleadoId: vacacion.empleadoId,
+      empleadoId: typeof vacacion.empleadoId === 'string' ? Number(vacacion.empleadoId) : vacacion.empleadoId,
       fechaInicio: vacacion.fechaInicio,
       fechaFin: vacacion.fechaFin,
       dias: vacacion.dias,
@@ -201,7 +238,9 @@ export class VacacionesListComponent implements OnInit {
       fechaInicio: '',
       fechaFin: '',
       motivo: '',
-      estado: 'Pendiente'
+      estado: 'Pendiente',
+      // Agregar información contextual para admin
+      isAdminCreating: isAdmin && isNewFromAdmin
     };
 
     const dialogRef = this.dialog.open(VacacionesDialogComponent, {
@@ -220,8 +259,38 @@ export class VacacionesListComponent implements OnInit {
     });
   }
 
+  openAdminDialog(vacacion: Vacacion): void {
+    console.log('🔧 Abriendo diálogo de administrador para vacación:', vacacion.id);
+    
+    const dialogRef = this.dialog.open(VacacionesAdminDialogComponent, {
+      width: '600px',
+      data: vacacion
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log('✅ Vacación actualizada desde el diálogo:', result);
+        this.snackBar.open('Estado de vacación actualizado correctamente', 'OK', {
+          duration: 3000
+        });
+        this.loadVacaciones(); // Recargar la lista
+      }
+    });
+  }
+
   createVacacion(vacacion: VacacionForm): void {
-    this.api.create(vacacion as Vacacion).subscribe({
+    // Convert the form data to match Vacacion type
+    const vacacionData = {
+      ...vacacion,
+      empleadoId: vacacion.empleadoId ? vacacion.empleadoId.toString() : this.authService.getEmpleadoId()
+    } as unknown as Vacacion;
+    const isAdminCreating = !!vacacion.isAdminCreating || this.isAdmin();
+
+    console.log('Crear vacación - isAdminCreating:', isAdminCreating, 'payload:', vacacionData);
+
+    const request$ = isAdminCreating ? this.api.create(vacacionData) : this.api.createVacacionEmpleado(vacacionData);
+
+    request$.subscribe({
       next: () => {
         this.snackBar.open('Vacación creada correctamente', 'Cerrar', { duration: 3000 });
         this.loadVacaciones();
@@ -232,9 +301,15 @@ export class VacacionesListComponent implements OnInit {
       }
     });
   }
-
+  
   updateVacacion(id: number, vacacion: VacacionForm): void {
-    this.api.update(id, vacacion as Vacacion).subscribe({
+    // Convert the form data to match Vacacion type
+    const vacacionData = {
+      ...vacacion,
+      empleadoId: vacacion.empleadoId?.toString()
+    } as unknown as Vacacion;
+    
+    this.api.update(id, vacacionData).subscribe({
       next: () => {
         this.snackBar.open('Vacación actualizada correctamente', 'Cerrar', { duration: 3000 });
         this.loadVacaciones();
@@ -257,5 +332,11 @@ export class VacacionesListComponent implements OnInit {
         this.snackBar.open('Error al eliminar la vacación', 'Cerrar', { duration: 3000 });
       }
     });
+  }
+
+  // Método para obtener el nombre del empleado actual
+  getCurrentEmployeeName(): string | null {
+    // Obtener el nombre del empleado desde localStorage o usar un método existente del AuthService
+    return localStorage.getItem('username') || this.authService.getUsername?.() || null;
   }
 }

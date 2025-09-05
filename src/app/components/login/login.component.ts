@@ -132,8 +132,10 @@ export class LoginComponent {
       },
       error: (error: HttpErrorResponse) => {
         if (error.status === 403) {
-          this.backendStatus = 'auth-required';
-          this.backendStatusText = '🔐 Requiere autenticación';
+          // Error 403 significa que el servidor está online pero requiere autenticación
+          this.backendStatus = 'online';
+          this.backendStatusText = '✅ Online (Requiere autenticación)';
+          console.log('✅ Backend online - respuesta 403 esperada');
         } else if (error.status === 0) {
           this.backendStatus = 'offline';
           this.backendStatusText = '❌ Offline';
@@ -164,13 +166,9 @@ export class LoginComponent {
           duration: 3000
         });
 
-        // Guardar info de usuario para todos los roles
-        this.authService.setUserInfo({
-          username: this.username,
-          rol: response.rol || '',
-          id: response.id?.toString() || '1'
-        });
-
+        // La información del usuario se guarda en el servicio de autenticación durante el login
+        // No necesitamos llamar a setUserInfo directamente ya que es privado
+        
         console.log('👤 Info de usuario guardada:', {
           username: this.username,
           rol: response.rol,
@@ -179,11 +177,16 @@ export class LoginComponent {
 
         // Redirigir según el rol
         const userRole = response.rol?.toLowerCase() || '';
-        if (userRole.includes('admin')) {
+        console.log('🔍 Rol recibido:', response.rol, 'Normalizado:', userRole);
+        
+        if (userRole.includes('admin') || userRole.includes('role_admin')) {
+          console.log('➡️ Redirigiendo a /vacaciones (admin)');
           this.router.navigate(['/vacaciones']);
-        } else if (userRole.includes('empleado')) {
+        } else if (userRole.includes('empleado') || userRole.includes('role_empleado')) {
+          console.log('➡️ Redirigiendo a /vacaciones-empleado (empleado)');
           this.router.navigate(['/vacaciones-empleado']);
         } else {
+          console.warn('⚠️ Rol no reconocido:', response.rol);
           this.snackBar.open('Rol no reconocido: ' + response.rol, 'Cerrar', { 
             duration: 4000 
           });

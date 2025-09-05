@@ -68,8 +68,16 @@ export const authInterceptor: HttpInterceptorFn = (
           console.error('🔐 Token expirado o inválido. Cerrando sesión...');
           localStorage.clear();
           router.navigate(['/login']);
-        } else if (error.status === 403 && !request.url.includes('/api/auth/validate')) {
-          console.error(`🚫 Acceso denegado a ${request.url}. Token: ${token ? 'Presente' : 'Ausente'}`);
+        } else if (error.status === 403) {
+          if (!request.url.includes('/api/auth/validate')) {
+            console.error(`🚫 Acceso denegado a ${request.url}`);
+            console.error(`🔑 Token presente: ${token ? 'Sí' : 'NO'}`);
+            if (!token) {
+              console.error('❌ ERROR CRÍTICO: Solicitud sin token. Redirigiendo al login...');
+              localStorage.clear();
+              router.navigate(['/login']);
+            }
+          }
         } else if (error.status === 500) {
           console.error('⚠️ Error interno del servidor:', error.error);
         } else if (error.status === 0) {
