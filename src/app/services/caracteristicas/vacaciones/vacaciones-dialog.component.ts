@@ -152,7 +152,7 @@ import { EmpleadosService, Empleado } from '../../empleados.service';
 })
 export class VacacionesDialogComponent implements OnInit {
   empleados: Empleado[] = [];
-  selectedEmpleadoId: number | null = null;
+  selectedEmpleadoId: string | null = null;
   isAdminCreating: boolean = false;
   minFechaInicio: Date = new Date();
 
@@ -213,11 +213,11 @@ export class VacacionesDialogComponent implements OnInit {
         console.error('❌ Error cargando empleados:', error);
         // Datos de respaldo si falla la API
         this.empleados = [
-          { id: 3, nombre: 'Administrador del Sistema', correo: 'admin@infinihr.com', puesto: 'Administrador', fecha_ingreso: '2025-01-01', username: 'admin' },
-          { id: 4, nombre: 'Juan Pérez', correo: 'juan.perez@infinihr.com', puesto: 'Desarrollador', fecha_ingreso: '2025-01-15', username: 'empleado' },
-          { id: 1, nombre: 'Juan Pérez', correo: 'juan@infinihr.com', puesto: 'Desarrollador', fecha_ingreso: '2025-07-30', username: 'usuario_1' },
-          { id: 2, nombre: 'Ana Mora', correo: 'ana.mora@empresa.com', puesto: 'Desarrollador Junior', fecha_ingreso: '', username: 'usuario_2' }
-        ];
+          { id: '3', nombre: 'Administrador del Sistema', correo: 'admin@infinihr.com', puesto: 'Administrador', fecha_ingreso: '2025-01-01', username: 'admin' },
+          { id: '4', nombre: 'Juan Pérez', correo: 'juan.perez@infinihr.com', puesto: 'Desarrollador', fecha_ingreso: '2025-01-15', username: 'empleado' },
+          { id: '1', nombre: 'Juan Pérez', correo: 'juan@infinihr.com', puesto: 'Desarrollador', fecha_ingreso: '2025-07-30', username: 'usuario_1' },
+          { id: '2', nombre: 'Ana Mora', correo: 'ana.mora@empresa.com', puesto: 'Desarrollador Junior', fecha_ingreso: '', username: 'usuario_2' }
+        ] as any;
       }
     });
   }

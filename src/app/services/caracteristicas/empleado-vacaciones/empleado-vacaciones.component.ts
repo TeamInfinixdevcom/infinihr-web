@@ -43,7 +43,7 @@ export class EmpleadoVacacionesComponent implements OnInit {
   vacaciones: Vacacion[] = [];
   loading = false;
   error = '';
-  displayedColumns: string[] = ['id', 'cedula', 'fechaInicio', 'fechaFin', 'estado', 'motivo', 'acciones'];
+  displayedColumns: string[] = ['id', 'empleadoId', 'fechaInicio', 'fechaFin', 'estado', 'motivo', 'fechaAprobacion', 'acciones'];
   userInfo: any;
 
   constructor(
@@ -153,7 +153,22 @@ export class EmpleadoVacacionesComponent implements OnInit {
     this.vacacionesService.getVacacionesEmpleado().subscribe({
       next: (data: Vacacion[]) => {
         console.log('✅ Vacaciones recibidas:', data);
-        this.vacaciones = data.filter(v => v.estado === 'Pendiente' || v.estado === 'Aprobado');
+        this.vacaciones = data.filter(v => v.estado === 'Pendiente' || v.estado === 'Aprobado' || v.estado === 'Rechazado');
+
+        // Mostrar snackbar si hay aprobadas o rechazadas
+        const aprobadas = this.vacaciones.filter(v => v.estado === 'Aprobado');
+        const rechazadas = this.vacaciones.filter(v => v.estado === 'Rechazado');
+        if ((aprobadas && aprobadas.length > 0) || (rechazadas && rechazadas.length > 0)) {
+          const partes: string[] = [];
+          if (aprobadas.length > 0) {
+            partes.push(`${aprobadas.length} aprobada(s)`);
+          }
+          if (rechazadas.length > 0) {
+            partes.push(`${rechazadas.length} rechazada(s)`);
+          }
+          const msg = `Resumen: ${partes.join(' y ')}.`;
+          this.snackBar.open(msg, 'Cerrar', { duration: 5000 });
+        }
         if (!this.vacaciones || this.vacaciones.length === 0) {
           this.snackBar.open('No tiene solicitudes de vacaciones (0 solicitudes)', 'Cerrar', { duration: 3000 });
         }

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 interface AuthResponse {
@@ -128,12 +128,22 @@ export class AuthService {
 
   logout(): void {
     console.log('🚪 Cerrando sesión...');
-    this.clearAuthData();
-    this.isAuthenticatedSubject.next(false);
-    
-    this.http.post(`${this.authUrl}/logout`, {}).subscribe({
-      next: () => console.log('✅ Logout notificado al servidor'),
-      error: (err) => console.log('⚠️ Error al notificar logout:', err.status)
+    const token = this.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
+    // Notificar al servidor antes de limpiar la sesión local. Limpiar en cualquier caso.
+    this.http.post(`${this.authUrl}/logout`, {}, headers ? { headers } : {}).subscribe({
+      next: () => {
+        console.log('✅ Logout notificado al servidor');
+        this.clearAuthData();
+        this.isAuthenticatedSubject.next(false);
+      },
+      error: (err) => {
+        console.log('⚠️ Error al notificar logout:', err?.status);
+        // Limpiar la sesión local igualmente para evitar loops de petición sin token
+        this.clearAuthData();
+        this.isAuthenticatedSubject.next(false);
+      }
     });
   }
 

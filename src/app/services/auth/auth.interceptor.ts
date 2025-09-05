@@ -76,6 +76,8 @@ export const authInterceptor: HttpInterceptorFn = (
               console.error('❌ ERROR CRÍTICO: Solicitud sin token. Redirigiendo al login...');
               localStorage.clear();
               router.navigate(['/login']);
+            } else {
+              console.warn('⚠️ Se recibió 403 pero existe token — puede que el servidor esté rechazando por roles/permiso');
             }
           }
         } else if (error.status === 500) {

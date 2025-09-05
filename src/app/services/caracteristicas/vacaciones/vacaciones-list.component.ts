@@ -25,7 +25,7 @@ import { AuthService } from '../../auth/auth.service';
 
 export interface VacacionForm {
   id?: number;
-  empleadoId?: number;  // Cambiar a camelCase
+  empleadoId?: string;  // ahora string para cédula
   fechaInicio: string;
   fechaFin: string;
   dias?: number | null;
@@ -228,7 +228,7 @@ export class VacacionesListComponent implements OnInit {
     // Para crear nuevas vacaciones o si no es admin, usar el diálogo normal
     const data: VacacionForm = vacacion ? { 
       id: vacacion.id,
-      empleadoId: typeof vacacion.empleadoId === 'string' ? Number(vacacion.empleadoId) : vacacion.empleadoId,
+      empleadoId: vacacion.empleadoId ? String(vacacion.empleadoId) : undefined,
       fechaInicio: vacacion.fechaInicio,
       fechaFin: vacacion.fechaFin,
       dias: vacacion.dias,

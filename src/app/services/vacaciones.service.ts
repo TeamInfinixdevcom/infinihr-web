@@ -11,6 +11,7 @@ export interface Vacacion {
   empleadoId: string;  // Cambiar a string para manejar cédulas
   fechaInicio: string;
   fechaFin: string;
+  fechaAprobacion?: string | null;
   dias: number | null;
   estado: 'Pendiente' | 'Aprobado' | 'Rechazado';
   motivo: string | null;
