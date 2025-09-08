@@ -102,25 +102,27 @@ export class AuthService {
       localStorage.setItem('username', response.username || '');
       localStorage.setItem('rol', response.rol || '');
       
-      // Mapear usuarios conocidos a sus cédulas
-      if (response.rol === 'empleado') {
-        const userToCedula: { [key: string]: string } = {
-          'ana.mora': '301234568',
-          'usuario_2': '301234568',
-          'empleado': '301234568'
-        };
-        
-        const cedula = userToCedula[response.username || ''] || '301234568';
-        localStorage.setItem('empleadoCedula', cedula);
-        localStorage.setItem('empleadoId', cedula);
-        localStorage.setItem('empleadoNombre', response.empleadoNombre || 'Ana Mora');
-        
-        console.log('✅ Datos del empleado guardados:', {
-          username: response.username,
-          cedula: cedula,
-          nombre: response.empleadoNombre || 'Ana Mora'
-        });
-      }
+        // Mapear usuarios conocidos a sus cédulas
+        const rolNormalized = (response.rol || '').toString().toLowerCase();
+        if (rolNormalized.includes('empleado')) {
+          const userToCedula: { [key: string]: string } = {
+            'ana.mora': '301234568',
+            'usuario_2': '301234568',
+            'empleado': '301234568'
+          };
+
+          // Preferir mapeo por username, si no existe usar un valor por defecto razonable
+          const cedula = userToCedula[(response.username || '').toString().toLowerCase()] || '301234568';
+          localStorage.setItem('empleadoCedula', cedula);
+          localStorage.setItem('empleadoId', cedula);
+          localStorage.setItem('empleadoNombre', response.empleadoNombre || 'Ana Mora');
+
+          console.log('✅ Datos del empleado guardados:', {
+            username: response.username,
+            cedula: cedula,
+            nombre: response.empleadoNombre || 'Ana Mora'
+          });
+        }
       
       console.log('💾 Datos de autenticación guardados correctamente');
     }

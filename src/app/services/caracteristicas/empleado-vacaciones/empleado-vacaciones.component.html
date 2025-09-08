@@ -1,106 +1,79 @@
-<div class="container">
-    <mat-card>
-        <mat-card-header>
-            <mat-card-title>Mis Solicitudes de Vacaciones</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <div class="welcome-message" style="margin-bottom: 20px; color: #1976d2; font-weight: 500;">
-                Bienvenido a la plataforma InfiniHR, puede revisar sus vacaciones.
-            </div>
-            
-            <div *ngIf="userInfo?.rol === 'empleado' || userInfo?.rol === 'ROLE_EMPLEADO'" class="user-panel" style="margin-bottom: 16px; background: #e3f2fd; padding: 10px; border-radius: 6px; font-weight: 500; color: #1976d2;">
-                Empleado | Usuario: {{ userInfo?.username }} | ID: {{ userInfo?.id }}
-            </div>
-            
-            <div class="actions-container">
-                <button mat-raised-button color="primary" (click)="solicitarVacacion()">
-                    <mat-icon>add</mat-icon> Solicitar Vacaciones
-                </button>
-            </div>
-            
-            <div *ngIf="loading" class="loading-spinner">
-                <mat-spinner diameter="40"></mat-spinner>
-            </div>
-            
-            <div *ngIf="error" class="error-message">
-                <p>{{ error }}</p>
-                <p *ngIf="error.includes('404')">
-                    El endpoint para vacaciones de empleado aún no está implementado en el backend. 
-                    Por favor verifique que existe la ruta /api/vacaciones/empleado.
-                </p>
-            </div>
-            
-            <div *ngIf="!loading && !error">
-                <table mat-table [dataSource]="vacaciones" class="mat-elevation-z2 full-width">
 
-                    <!-- ID Column -->
-                    <ng-container matColumnDef="id">
-                        <th mat-header-cell *matHeaderCellDef>ID</th>
-                        <td mat-cell *matCellDef="let element">{{ element.id }}</td>
-                    </ng-container>
+<div class="oracle-modern-container">
+		<div class="action-bar">
+			<div class="page-title">
+				<h2>Mis Vacaciones</h2>
+				<p class="subtitle">Listado de solicitudes</p>
+			</div>
 
-                    <!-- Cedula (empleadoId) Column -->
-                    <ng-container matColumnDef="empleadoId">
-                        <th mat-header-cell *matHeaderCellDef>Cédula</th>
-                        <td mat-cell *matCellDef="let element">{{ element.empleadoId || element.cedula }}</td>
-                    </ng-container>
-                    
-                    <!-- Fecha Inicio Column -->
-                    <ng-container matColumnDef="fechaInicio">
-                        <th mat-header-cell *matHeaderCellDef>Fecha Inicio</th>
-                        <td mat-cell *matCellDef="let element">{{ element.fechaInicio | date:'dd/MM/yyyy' }}</td>
-                    </ng-container>
-                    
-                    <!-- Fecha Fin Column -->
-                    <ng-container matColumnDef="fechaFin">
-                        <th mat-header-cell *matHeaderCellDef>Fecha Fin</th>
-                        <td mat-cell *matCellDef="let element">{{ element.fechaFin | date:'dd/MM/yyyy' }}</td>
-                    </ng-container>
-                    
-                    <!-- Estado Column -->
-                    <ng-container matColumnDef="estado">
-                        <th mat-header-cell *matHeaderCellDef>Estado</th>
-                        <td mat-cell *matCellDef="let element" [ngClass]="'estado-' + element.estado.toLowerCase()">
-                            {{ element.estado }}
-                        </td>
-                    </ng-container>
-                    
-                    <!-- Motivo Column -->
-                    <ng-container matColumnDef="motivo">
-                        <th mat-header-cell *matHeaderCellDef>Motivo</th>
-                        <td mat-cell *matCellDef="let element">{{ element.motivo }}</td>
-                    </ng-container>
-                    
-                    <!-- Fecha Aprobación Column -->
-                    <ng-container matColumnDef="fechaAprobacion">
-                        <th mat-header-cell *matHeaderCellDef>Fecha Aprobación</th>
-                        <td mat-cell *matCellDef="let element">
-                            <span *ngIf="element.fechaAprobacion && element.fechaAprobacion !== null && element.fechaAprobacion !== 'null'; else dash">
-                                {{ element.fechaAprobacion | date:'dd/MM/yyyy HH:mm' }}
-                            </span>
-                            <ng-template #dash>-</ng-template>
-                        </td>
-                    </ng-container>
+			<div class="action-buttons">
+				<button mat-raised-button color="primary" class="oracle-btn primary-btn" (click)="solicitarVacacion()">
+					<mat-icon>add</mat-icon>
+					Solicitar Vacación
+				</button>
+			</div>
+		</div>
 
-                    <!-- Acciones Column -->
-                    <ng-container matColumnDef="acciones">
-                        <th mat-header-cell *matHeaderCellDef>Acciones</th>
-                        <td mat-cell *matCellDef="let element">
-                            <button mat-icon-button color="warn" *ngIf="element.estado === 'Pendiente'" 
-                                    matTooltip="Cancelar solicitud">
-                                <mat-icon>delete</mat-icon>
-                            </button>
-                        </td>
-                    </ng-container>
-                    
-                    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-                </table>
-                
-                <div *ngIf="vacaciones.length === 0" class="no-data">
-                    No tienes solicitudes de vacaciones.
-                </div>
-            </div>
-        </mat-card-content>
-    </mat-card>
+	<div *ngIf="loading" class="loading-state">
+		<mat-spinner diameter="48"></mat-spinner>
+		<p>Cargando solicitudes...</p>
+	</div>
+
+	<div *ngIf="error" class="error-message">
+		<div class="error-icon">⚠</div>
+		<h3>Error</h3>
+		<p>{{ error }}</p>
+	</div>
+
+	<div *ngIf="!loading && (!vacaciones || vacaciones.length === 0)" class="empty-state">
+		<div class="empty-icon">📭</div>
+		<h3>No tiene solicitudes de vacaciones</h3>
+		<p>Cuando envíe una solicitud aparecerá aquí.</p>
+	</div>
+
+	<mat-card class="data-table-card" *ngIf="vacaciones && vacaciones.length > 0">
+		<div class="table-container">
+			<table mat-table [dataSource]="vacaciones" class="mat-elevation-z1 oracle-table">
+
+				<ng-container matColumnDef="fechaInicio">
+					<th mat-header-cell *matHeaderCellDef>Fecha inicio</th>
+					<td mat-cell *matCellDef="let v">{{ v.fechaInicio | date:'shortDate' }}</td>
+				</ng-container>
+
+				<ng-container matColumnDef="fechaFin">
+					<th mat-header-cell *matHeaderCellDef>Fecha fin</th>
+					<td mat-cell *matCellDef="let v">{{ v.fechaFin | date:'shortDate' }}</td>
+				</ng-container>
+
+				<ng-container matColumnDef="dias">
+					<th mat-header-cell *matHeaderCellDef>Días</th>
+					<td mat-cell *matCellDef="let v">{{ v.dias }}</td>
+				</ng-container>
+
+				<ng-container matColumnDef="estado">
+					<th mat-header-cell *matHeaderCellDef>Estado</th>
+					<td mat-cell *matCellDef="let v">{{ v.estado }}</td>
+				</ng-container>
+
+				<ng-container matColumnDef="motivo">
+					<th mat-header-cell *matHeaderCellDef>Motivo</th>
+					<td mat-cell *matCellDef="let v">{{ v.motivo }}</td>
+				</ng-container>
+
+				<ng-container matColumnDef="acciones">
+					<th mat-header-cell *matHeaderCellDef>Acciones</th>
+					<td mat-cell *matCellDef="let v">
+						<div class="action-buttons">
+							<button mat-icon-button color="warn" (click)="cancelarSolicitud(v)" [disabled]="!puedeCanselar(v)">
+								<mat-icon>delete</mat-icon>
+							</button>
+						</div>
+					</td>
+				</ng-container>
+
+				<tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+				<tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+			</table>
+		</div>
+	</mat-card>
 </div>

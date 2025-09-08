@@ -10,6 +10,10 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatOptionModule } from '@angular/material/core';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth/auth.service';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
@@ -35,6 +39,10 @@ import { Vacacion } from '../../vacaciones.service';
     MatSnackBarModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    MatSelectModule,
+    MatFormFieldModule,
+    MatOptionModule,
+    FormsModule,
     MatDatepickerModule,
     MatNativeDateModule
   ]
@@ -43,7 +51,7 @@ export class EmpleadoVacacionesComponent implements OnInit {
   vacaciones: Vacacion[] = [];
   loading = false;
   error = '';
-  displayedColumns: string[] = ['id', 'empleadoId', 'fechaInicio', 'fechaFin', 'estado', 'motivo', 'fechaAprobacion', 'acciones'];
+  displayedColumns: string[] = ['fechaInicio', 'fechaFin', 'dias', 'estado', 'motivo', 'acciones'];
   userInfo: any;
 
   constructor(
@@ -420,5 +428,74 @@ export class EmpleadoVacacionesComponent implements OnInit {
           }
         });
     });
+  }
+
+  /**
+   * Cancelar una solicitud de vacaciones
+   * Solo permitido para solicitudes en estado 'Pendiente'
+   */
+  cancelarSolicitud(vacacion: Vacacion): void {
+    if (vacacion.estado !== 'Pendiente') {
+      this.snackBar.open('Solo se pueden cancelar solicitudes pendientes', 'Cerrar', { duration: 3000 });
+      return;
+    }
+
+    const confirmacion = confirm(`¿Está seguro que desea cancelar la solicitud de vacaciones #${vacacion.id}?`);
+    if (!confirmacion) {
+      return;
+    }
+
+    this.loading = true;
+    
+    console.log('🗑️ Cancelando solicitud de vacaciones:', {
+      id: vacacion.id,
+      estado: vacacion.estado,
+      fechaInicio: vacacion.fechaInicio,
+      fechaFin: vacacion.fechaFin
+    });
+
+    // Usar el método delete del servicio
+    this.vacacionesService.delete(vacacion.id).subscribe({
+      next: () => {
+        console.log('✅ Solicitud cancelada exitosamente');
+        this.snackBar.open('Solicitud cancelada exitosamente', 'Cerrar', { duration: 3000 });
+        this.cargarVacaciones(); // Recargar la lista
+      },
+      error: (err) => {
+        console.error('❌ Error al cancelar solicitud:', err);
+        let mensaje = 'Error al cancelar la solicitud';
+        
+        if (err.status === 403) {
+          mensaje = 'No tiene permisos para cancelar esta solicitud';
+        } else if (err.status === 404) {
+          mensaje = 'La solicitud no existe';
+        } else if (err.status === 409) {
+          mensaje = 'La solicitud ya fue procesada y no se puede cancelar';
+        } else if (err.status === 401) {
+          mensaje = 'Sesión expirada. Por favor, vuelva a iniciar sesión';
+        } else if (err.status === 0) {
+          mensaje = 'No se puede conectar con el servidor';
+        }
+        
+        this.snackBar.open(mensaje, 'Cerrar', { duration: 5000 });
+      },
+      complete: () => {
+        this.loading = false;
+      }
+    });
+  }
+
+  /**
+   * Verificar si se puede cancelar una solicitud
+   * Solo las solicitudes 'Pendiente' pueden ser canceladas
+   */
+  puedeCanselar(vacacion: Vacacion): boolean {
+    console.log('🔍 Verificando si se puede cancelar:', {
+      id: vacacion.id,
+      estado: vacacion.estado,
+      type: typeof vacacion.estado,
+      puedeCanselar: vacacion.estado === 'Pendiente'
+    });
+    return vacacion.estado === 'Pendiente';
   }
 }
