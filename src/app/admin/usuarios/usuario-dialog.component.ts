@@ -546,6 +546,7 @@ import { Component, Inject, OnInit, OnDestroy } from '@angular/core';
         this.loading = true;
 
         // Construir objeto empleado
+        const puestoSeleccionado = this.puestosFiltrados.find(p => p.id == this.workForm.value.puestoId);
         const empleado = {
             id: this.personalForm.value.cedula,
             username: this.userForm.value.username,
@@ -561,37 +562,93 @@ import { Component, Inject, OnInit, OnDestroy } from '@angular/core';
             nacionalidadPersonalizada: this.personalForm.value.nacionalidadPersonalizada,
             departamentoId: this.workForm.value.departamentoId,
             puestoId: this.workForm.value.puestoId,
+            puesto: puestoSeleccionado?.nombre || 'Sin asignar', // ✅ AGREGADO: campo puesto requerido por backend
             fecha_ingreso: this.workForm.value.fechaIngreso?.toISOString?.()?.split('T')[0],
             salarioBase: this.workForm.value.salarioBase
         };
 
         // Construir objeto usuario
         const usuario = {
+            id: this.data.isEdit ? this.data.usuario?.id : undefined,
             username: this.userForm.value.username,
-            password: this.userForm.value.password,
+            password: this.userForm.value.password || (this.data.isEdit ? 'admin123' : this.userForm.value.password), // ✅ Usar password válida (min 6 chars) en edición
             rol: this.userForm.value.rol,
             cedula: this.personalForm.value.cedula,
             email: this.userForm.value.email,
             activo: this.userForm.value.activo
         };
 
-        const registroCompleto = { usuario, empleado };
+        if (this.data.isEdit) {
+            // MODO EDICIÓN: Actualizar usuario existente
+            const usuarioCompleto = {
+                ...usuario,
+                ...empleado
+            };
 
-        // Usar el servicio real para crear usuario y empleado juntos
-        (this.usuariosService as any).registroCompleto(registroCompleto)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe({
-                next: () => {
-                    this.loading = false;
-                    this.dialogRef.close(true);
-                },
-                error: (error: any) => {
-                    this.loading = false;
-                    this.snackBar.open('Error al guardar usuario', 'Cerrar', {
-                        duration: 3000,
-                        panelClass: ['error-snackbar']
-                    });
-                }
-            });
+            this.usuariosService.updateUsuario(usuario.id!, usuarioCompleto)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe({
+                    next: () => {
+                        this.loading = false;
+                        this.snackBar.open('Usuario actualizado exitosamente', 'Cerrar', {
+                            duration: 3000,
+                            panelClass: ['success-snackbar']
+                        });
+                        this.dialogRef.close(true);
+                    },
+                    error: (error: any) => {
+                        this.loading = false;
+                        console.error('Error al actualizar usuario:', error);
+                        this.snackBar.open(
+                            error.status === 403 ? 'No tiene permisos para actualizar usuarios' : 'Error al actualizar usuario', 
+                            'Cerrar', {
+                            duration: 3000,
+                            panelClass: ['error-snackbar']
+                        });
+                    }
+                });
+        } else {
+            // MODO CREACIÓN: Crear nuevo usuario
+            const registroCompleto = { usuario, empleado };
+
+            this.usuariosService.registerCompleto(registroCompleto)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe({
+                    next: () => {
+                        this.loading = false;
+                        this.snackBar.open('Usuario creado exitosamente', 'Cerrar', {
+                            duration: 3000,
+                            panelClass: ['success-snackbar']
+                        });
+                        this.dialogRef.close(true);
+                    },
+                    error: (error: any) => {
+                        this.loading = false;
+                        console.error('❌ [Usuario-Dialog] Error completo al crear usuario:');
+                        console.error('   Status:', error.status);
+                        console.error('   StatusText:', error.statusText);
+                        console.error('   URL:', error.url);
+                        console.error('   Error body:', error.error);
+                        console.error('   Error object:', error);
+                        
+                        // Mostrar mensaje específico del backend si existe
+                        let errorMessage = 'Error al crear usuario';
+                        if (error.status === 403) {
+                            errorMessage = 'No tiene permisos para crear usuarios';
+                        } else if (error.error && error.error.message) {
+                            errorMessage = `Error del servidor: ${error.error.message}`;
+                        } else if (error.status === 500) {
+                            errorMessage = 'Error interno del servidor. Revise la consola para más detalles.';
+                        }
+                        
+                        console.error('   Mensaje mostrado al usuario:', errorMessage);
+                        
+                        this.snackBar.open(errorMessage, 'Cerrar', {
+                            duration: 5000, // Más tiempo para leer el error
+                            panelClass: ['error-snackbar']
+                        });
+                    }
+                });
+        }
     }
     }

@@ -266,6 +266,24 @@ export class UsuariosService {
   }
 
   /**
+   * Actualizar usuario (endpoint correcto del backend)
+   */
+  updateUsuario(id: number, usuarioData: any): Observable<Usuario> {
+    console.log('🔄 [UsuariosService] Actualizando usuario con ID:', id);
+    console.log('📝 [UsuariosService] Datos a enviar:', usuarioData);
+    
+    return this.http.put<Usuario>(`${this.apiUrl}/${id}`, usuarioData, { 
+      headers: this.getHeaders() 
+    }).pipe(
+      tap(response => console.log('✅ [UsuariosService] Usuario actualizado:', response)),
+      catchError(error => {
+        console.error('❌ [UsuariosService] Error al actualizar usuario:', error);
+        throw error;
+      })
+    );
+  }
+
+  /**
    * Eliminar usuario (y opcionalmente empleado)
    */
   deleteUsuario(id: number, eliminarEmpleado: boolean = false): Observable<void> {
@@ -372,8 +390,42 @@ export class UsuariosService {
    * Registro conjunto de usuario y empleado
    */
   registerCompleto(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/register-completo`, data, {
+    console.log('🔄 [UsuariosService] Creando usuario con registerCompleto');
+    console.log('📝 [UsuariosService] Datos originales:', JSON.stringify(data, null, 2));
+    
+    // Usar el endpoint correcto del backend: /register-completo
+    // El backend espera el formato: { usuario: UsuarioDTO, empleado: EmpleadoDTO }
+    const registroData = {
+      usuario: data.usuario,
+      empleado: data.empleado
+    };
+    
+    console.log('📝 [UsuariosService] Datos para POST register-completo:', JSON.stringify(registroData, null, 2));
+    console.log('🌐 [UsuariosService] URL:', `${this.apiUrl}/register-completo`);
+    console.log('🔑 [UsuariosService] Headers:', this.getHeaders());
+    
+    return this.http.post(`${this.apiUrl}/register-completo`, registroData, {
       headers: this.getHeaders()
-    });
+    }).pipe(
+      tap(response => {
+        console.log('✅ [UsuariosService] Usuario creado exitosamente:', response);
+      }),
+      catchError(error => {
+        console.error('❌ [UsuariosService] Error completo al crear usuario:');
+        console.error('   Status:', error.status);
+        console.error('   StatusText:', error.statusText);
+        console.error('   URL:', error.url);
+        console.error('   Error body:', error.error);
+        console.error('   Headers:', error.headers);
+        console.error('   Error completo:', JSON.stringify(error, null, 2));
+        
+        // Intentar extraer mensaje específico del backend
+        if (error.error && error.error.message) {
+          console.error('   Mensaje del backend:', error.error.message);
+        }
+        
+        throw error;
+      })
+    );
   }
 }

@@ -128,8 +128,22 @@ export class EmpleadoVacacionesComponent implements OnInit {
 
         // Filtro de seguridad: Solo mostrar vacaciones del usuario actual
         const currentCedula = this.authService.getEmpleadoCedula();
+        const currentId = this.authService.getEmpleadoId();
+        
+        console.log('🔍 [DEBUG Vacaciones] Usuario actual - Cédula:', currentCedula, 'ID:', currentId);
+        console.log('🔍 [DEBUG Vacaciones] Vacaciones obtenidas:', this.vacaciones.length);
+        console.log('🔍 [DEBUG Vacaciones] Primeras 3 vacaciones:', this.vacaciones.slice(0, 3).map(v => ({
+          id: v.id,
+          empleadoId: v.empleadoId,
+          estado: v.estado,
+          fechaInicio: v.fechaInicio
+        })));
+        
         if (currentCedula) {
+          console.log('🔍 [DEBUG Vacaciones] Filtrando por cédula:', currentCedula);
+          const beforeFilter = this.vacaciones.length;
           this.vacaciones = this.vacaciones.filter(v => v.empleadoId === currentCedula);
+          console.log('🔍 [DEBUG Vacaciones] Después del filtro:', this.vacaciones.length, 'de', beforeFilter);
         }
 
         // Mostrar resumen si hay vacaciones procesadas
