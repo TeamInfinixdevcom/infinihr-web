@@ -15,11 +15,17 @@ export const authInterceptor: HttpInterceptorFn = (
   next: HttpHandlerFn
 ): Observable<HttpEvent<unknown>> => {
   const router = inject(Router);
-    const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token');
     
-    console.log(`🔍 Interceptando solicitud a ${request.url}`);
-    console.log(`🔑 Token disponible: ${token ? 'Sí (' + token.substring(0, 20) + '...)' : 'No'}`);
-    console.log(`📋 Método: ${request.method}`);
+  console.log(`🔍 Interceptando solicitud a ${request.url}`);
+  console.log(`🔑 Token disponible: ${token ? 'Sí (' + token.substring(0, 20) + '...)' : 'No'}`);
+  console.log(`📋 Método: ${request.method}`);
+  
+  // Verificar si el token está en el formato correcto
+  if (token && !token.startsWith('Bearer ')) {
+    console.log('🔄 Corrigiendo formato del token...');
+    localStorage.setItem('token', `Bearer ${token}`);
+  }
     
     let modifiedRequest = request;
     
@@ -30,23 +36,32 @@ export const authInterceptor: HttpInterceptorFn = (
 
     if (token) {
       // Modo normal: enviar token
+      const headers = {
+        'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
       modifiedRequest = request.clone({
-        setHeaders: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+        setHeaders: headers
       });
-      console.log('✅ Token añadido a la solicitud');
+      
+      console.log('✅ Token añadido a la solicitud:', headers.Authorization);
+    } else if (!request.url.includes('/api/auth/')) {
+      // Redireccionar al login si no hay token y no es una petición de autenticación
+      console.log('⚠️ No hay token disponible, redirigiendo al login');
+      router.navigate(['/login']);
+      return next(request);
     } else {
-      // Sin token: headers básicos
+      // Sin token: headers básicos (solo para peticiones de autenticación)
       modifiedRequest = request.clone({
         setHeaders: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Access-Control-Allow-Origin': '*'
         }
       });
-      console.log('⚠️ No hay token disponible, enviando solicitud sin autenticación');
+      console.log('⚠️ No hay token disponible, enviando solicitud de autenticación');
     }
 
     return next(modifiedRequest).pipe(

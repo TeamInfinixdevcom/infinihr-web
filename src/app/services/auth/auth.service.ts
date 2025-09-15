@@ -46,10 +46,15 @@ export class AuthService {
               rol: response.rol || '',
               id: response.id?.toString() || ''
             });
-              // Si la respuesta no trae empleadoCedula, intentar obtenerla desde el backend por username
+              // Completar inmediatamente después del login exitoso
+              // La búsqueda de empleado se hará en segundo plano sin bloquear el login
+              observer.next(response);
+              observer.complete();
+
+              // Intentar obtener información del empleado en segundo plano (no bloqueante)
               const cedulaFromResponse = response.empleadoId?.toString() || response.id?.toString();
               if (!cedulaFromResponse) {
-                console.log('🔎 No se recibió cédula en la respuesta, buscando en backend por username...');
+                console.log('🔎 Buscando información del empleado en segundo plano...');
                 this.http.get<any[]>(`${this.apiUrl}/empleados`).subscribe({
                   next: empleados => {
                     try {
@@ -59,27 +64,16 @@ export class AuthService {
                         localStorage.setItem('empleadoCedula', ced);
                         localStorage.setItem('empleadoId', ced);
                         localStorage.setItem('empleadoNombre', found.nombre || '');
-                        console.log('✅ Cédula encontrada y guardada desde backend:', ced);
-                      } else {
-                        console.warn('⚠️ No se encontró empleado con username en /api/empleados');
+                        console.log('✅ Información del empleado actualizada:', ced);
                       }
                     } catch (e) {
-                      console.error('❌ Error procesando lista de empleados:', e);
+                      console.warn('⚠️ Error procesando información del empleado (no crítico):', e);
                     }
-                    observer.next(response);
-                    observer.complete();
                   },
                   error: (err) => {
-                    console.error('❌ Error obteniendo lista de empleados para mapear cédula:', err);
-                    // aunque falle, resolvemos el login para no bloquear UX
-                    observer.next(response);
-                    observer.complete();
+                    console.warn('⚠️ No se pudo obtener información del empleado (no crítico):', err);
                   }
                 });
-              } else {
-                // Completar inmediatamente - la cédula ya está guardada
-                observer.next(response);
-                observer.complete();
               }
           } else {
             console.error('❌ No se recibió token en la respuesta');
@@ -97,8 +91,11 @@ export class AuthService {
   }
 
   private storeAuthData(response: AuthResponse): void {
+    console.log('🔒 Guardando datos de autenticación:', response);
     if (response.token) {
-      localStorage.setItem('token', response.token);
+      // Almacenar token crudo (sin prefijo). El interceptor agrega 'Bearer ' al enviar.
+      const rawToken = response.token.startsWith('Bearer ') ? response.token.substring(7) : response.token;
+      localStorage.setItem('token', rawToken);
       localStorage.setItem('username', response.username || '');
       localStorage.setItem('rol', response.rol || '');
       
@@ -136,19 +133,20 @@ export class AuthService {
     this.clearAuthData();
     this.isAuthenticatedSubject.next(false);
     
-    // Luego intentar notificar al servidor (opcional)
+    // Luego intentar notificar al servidor (opcional y no bloqueante)
     if (token) {
       const headers = new HttpHeaders({ 
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       });
 
+      // Usar timeout y manejo de errores más robusto
       this.http.post(`${this.authUrl}/logout`, {}, { headers }).subscribe({
         next: () => {
           console.log('✅ Logout notificado al servidor');
         },
         error: (err) => {
-          console.log('⚠️ Error al notificar logout (ignorado):', err?.status);
+          console.log('⚠️ Error al notificar logout (ignorado):', err?.status || 'desconocido');
           // Ya limpiamos los datos, así que este error no importa
         }
       });
@@ -174,7 +172,16 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    console.log('🔍 [AuthService.getToken] Token crudo:', token ? `${token.substring(0, 20)}...` : 'NULL');
+    
+    if (!token) {
+      return null;
+    }
+    
+    // Devolver el token tal como está almacenado
+    // El interceptor o el servicio que lo use añadirá "Bearer " si es necesario
+    return token;
   }
 
   getUsername(): string | null {
@@ -255,12 +262,54 @@ export class AuthService {
   // Método para debugging público
   debugAuth(): any {
     const token = this.getToken();
-    return {
+    const estado = {
       hasToken: !!token,
       tokenPreview: token ? `${token.substring(0, 20)}...` : 'NO DISPONIBLE',
+      tokenLength: token?.length || 0,
       username: this.getUsername(),
+      rol: this.getRol(),
       empleadoCedula: this.getEmpleadoCedula(),
-      isAuthenticated: this.isAuthenticated()
+      isAuthenticated: this.isAuthenticated(),
+      isSessionValid: this.isSessionValid()
     };
+    
+    console.log('🔍 [AuthService] Estado completo de autenticación:', estado);
+    return estado;
+  }
+
+  // Método público para verificar el token específicamente
+  public verifyToken(): void {
+    console.log('🔍 [AuthService] Verificación manual del token:');
+    const rawToken = localStorage.getItem('token');
+    console.log('   • Token crudo desde localStorage:', rawToken ? `${rawToken.substring(0, 50)}...` : 'NULL');
+    console.log('   • Longitud del token crudo:', rawToken?.length || 0);
+    console.log('   • Comienza con Bearer:', rawToken?.startsWith('Bearer ') ? 'SÍ' : 'NO');
+    
+    const processedToken = this.getToken();
+    console.log('   • Token procesado por getToken():', processedToken ? `${processedToken.substring(0, 50)}...` : 'NULL');
+    console.log('   • Longitud del token procesado:', processedToken?.length || 0);
+    
+    // Verificar si es un JWT válido
+    if (rawToken && !rawToken.startsWith('Bearer ')) {
+      const parts = rawToken.split('.');
+      console.log('   • Partes del JWT (header.payload.signature):', parts.length);
+      if (parts.length === 3) {
+        try {
+          const header = JSON.parse(atob(parts[0]));
+          const payload = JSON.parse(atob(parts[1]));
+          console.log('   • Header del JWT:', header);
+          console.log('   • Payload del JWT:', {
+            sub: payload.sub,
+            exp: payload.exp,
+            iat: payload.iat,
+            expDate: payload.exp ? new Date(payload.exp * 1000) : 'No exp'
+          });
+        } catch (e) {
+          console.error('   • Error decodificando JWT:', e);
+        }
+      }
+    }
+    
+    console.log('   • Formato esperado: Bearer <jwt_token>');
   }
 }

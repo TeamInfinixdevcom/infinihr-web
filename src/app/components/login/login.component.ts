@@ -166,30 +166,38 @@ export class LoginComponent {
           duration: 3000
         });
 
-        // La información del usuario se guarda en el servicio de autenticación durante el login
-        // No necesitamos llamar a setUserInfo directamente ya que es privado
-        
         console.log('👤 Info de usuario guardada:', {
           username: this.username,
           rol: response.rol,
           id: response.id
         });
 
-        // Redirigir según el rol
-        const userRole = response.rol?.toLowerCase() || '';
-        console.log('🔍 Rol recibido:', response.rol, 'Normalizado:', userRole);
-        
-        if (userRole.includes('admin') || userRole.includes('role_admin')) {
-          console.log('➡️ Redirigiendo a /vacaciones (admin)');
-          this.router.navigate(['/vacaciones']);
-        } else if (userRole.includes('empleado') || userRole.includes('role_empleado')) {
-          console.log('➡️ Redirigiendo a /vacaciones-empleado (empleado)');
-          this.router.navigate(['/vacaciones-empleado']);
-        } else {
-          console.warn('⚠️ Rol no reconocido:', response.rol);
-          this.snackBar.open('Rol no reconocido: ' + response.rol, 'Cerrar', { 
-            duration: 4000 
-          });
+        // Redirigir según el rol con manejo de errores
+        try {
+          const userRole = response.rol?.toLowerCase() || '';
+          console.log('🔍 Rol recibido:', response.rol, 'Normalizado:', userRole);
+          
+          if (userRole.includes('admin') || userRole.includes('role_admin')) {
+            console.log('➡️ Redirigiendo a /admin (administrador)');
+            this.router.navigate(['/admin']).catch(err => {
+              console.error('❌ Error al navegar a /admin:', err);
+              this.snackBar.open('Error de navegación', 'Cerrar', { duration: 3000 });
+            });
+          } else if (userRole.includes('empleado') || userRole.includes('role_empleado')) {
+            console.log('➡️ Redirigiendo a /empleado-vacaciones (empleado)');
+            this.router.navigate(['/empleado-vacaciones']).catch(err => {
+              console.error('❌ Error al navegar a /empleado-vacaciones:', err);
+              this.snackBar.open('Error de navegación', 'Cerrar', { duration: 3000 });
+            });
+          } else {
+            console.warn('⚠️ Rol no reconocido:', response.rol);
+            this.snackBar.open('Rol no reconocido: ' + response.rol, 'Cerrar', { 
+              duration: 4000 
+            });
+          }
+        } catch (navigationError) {
+          console.error('❌ Error en navegación:', navigationError);
+          this.snackBar.open('Error de navegación', 'Cerrar', { duration: 3000 });
         }
       },
       error: (error: HttpErrorResponse) => {
@@ -198,14 +206,19 @@ export class LoginComponent {
         
         let errorMessage = 'Error al iniciar sesión';
         
-        if (error.status === 401) {
-          errorMessage = 'Usuario o contraseña incorrectos';
-        } else if (error.status === 403) {
-          errorMessage = 'Acceso denegado';
-        } else if (error.status === 0) {
-          errorMessage = 'No se puede conectar con el servidor';
-        } else if (error.error?.message) {
-          errorMessage = error.error.message;
+        try {
+          if (error.status === 401) {
+            errorMessage = 'Usuario o contraseña incorrectos';
+          } else if (error.status === 403) {
+            errorMessage = 'Acceso denegado';
+          } else if (error.status === 0) {
+            errorMessage = 'No se puede conectar con el servidor';
+          } else if (error.error?.message) {
+            errorMessage = error.error.message;
+          }
+        } catch (parseError) {
+          console.error('❌ Error procesando error de login:', parseError);
+          errorMessage = 'Error desconocido al iniciar sesión';
         }
         
         this.snackBar.open(errorMessage, 'Cerrar', {

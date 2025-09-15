@@ -1,5 +1,6 @@
 
 <div class="oracle-modern-container">
+	<div *ngIf="authService.isSessionValid(); else sessionInvalid">
 		<div class="action-bar">
 			<div class="page-title">
 				<h2>Mis Vacaciones</h2>
@@ -64,7 +65,7 @@
 					<th mat-header-cell *matHeaderCellDef>Acciones</th>
 					<td mat-cell *matCellDef="let v">
 						<div class="action-buttons">
-							<button mat-icon-button color="warn" (click)="cancelarSolicitud(v)" [disabled]="!puedeCanselar(v)">
+							<button mat-icon-button color="warn" (click)="cancelarSolicitud(v)" [disabled]="!puedeCancelar(v)">
 								<mat-icon>delete</mat-icon>
 							</button>
 						</div>
@@ -76,4 +77,17 @@
 			</table>
 		</div>
 	</mat-card>
+	</div>
+
+	<ng-template #sessionInvalid>
+		<div class="error-message">
+			<div class="error-icon">🔒</div>
+			<h3>Sesión incompleta</h3>
+			<p>No se pudo validar su sesión correctamente. Por favor, cierre sesión y vuelva a ingresar.</p>
+			<div style="margin-top:12px;">
+				<button mat-button color="primary" (click)="router.navigate(['/login'])">Ir al login</button>
+			</div>
+		</div>
+	</ng-template>
+
 </div>

@@ -1,31 +1,20 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth/auth.service';
-import { map, take } from 'rxjs/operators';
+import { take, map } from 'rxjs/operators';
 
 export const authGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
   const authService = inject(AuthService);
-  
-  // Debug inmediato
-  const debugInfo = authService.debugAuth();
-  console.log('🛡️ AuthGuard - Debug inicial:', {
-    ...debugInfo,
-    targetUrl: state.url
-  });
-  
+
+  // Comportamiento seguro: permitir sólo si el observable emite true
   return authService.isAuthenticated$.pipe(
     take(1),
     map(isAuthenticated => {
-      console.log('🛡️ AuthGuard - Usuario autenticado (Observable):', isAuthenticated);
-      
-      // Si tenemos token, permitir acceso independientemente del Observable
-      if (debugInfo.hasToken) {
-        console.log('✅ AuthGuard - Permitiendo acceso por token presente');
+      if (isAuthenticated) {
         return true;
       }
-      
-      console.log('❌ AuthGuard - Sin token, redirigiendo a login');
+      // No autenticado -> redirigir a login
       router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
       return false;
     })
