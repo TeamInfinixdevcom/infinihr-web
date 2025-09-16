@@ -51,10 +51,16 @@ import { AuthService } from '../services/auth/auth.service';
             <p>Administrar la información personal y laboral de todos los empleados.</p>
           </mat-card-content>
           <mat-card-actions>
-            <button mat-raised-button color="accent" disabled>
+            <button mat-raised-button color="accent" *ngIf="isAdmin(); else empleadosLocked" routerLink="/admin/empleados">
               <mat-icon>work</mat-icon>
-              Próximamente
+              Gestionar Empleados
             </button>
+            <ng-template #empleadosLocked>
+              <button mat-raised-button color="accent" disabled>
+                <mat-icon>work</mat-icon>
+                Próximamente
+              </button>
+            </ng-template>
           </mat-card-actions>
         </mat-card>
 
@@ -69,10 +75,16 @@ import { AuthService } from '../services/auth/auth.service';
             <p>Configurar departamentos y la estructura organizacional de la empresa.</p>
           </mat-card-content>
           <mat-card-actions>
-            <button mat-raised-button color="accent" disabled>
+            <button mat-raised-button color="accent" *ngIf="isAdmin(); else deptLocked" routerLink="/admin/departamentos">
               <mat-icon>account_tree</mat-icon>
-              Próximamente
+              Gestionar Departamentos
             </button>
+            <ng-template #deptLocked>
+              <button mat-raised-button color="accent" disabled>
+                <mat-icon>account_tree</mat-icon>
+                Próximamente
+              </button>
+            </ng-template>
           </mat-card-actions>
         </mat-card>
 
@@ -87,10 +99,16 @@ import { AuthService } from '../services/auth/auth.service';
             <p>Definir los diferentes puestos de trabajo y sus características.</p>
           </mat-card-content>
           <mat-card-actions>
-            <button mat-raised-button color="accent" disabled>
+            <button mat-raised-button color="accent" *ngIf="isAdmin(); else puestosLocked" routerLink="/admin/puestos">
               <mat-icon>assignment_ind</mat-icon>
-              Próximamente
+              Gestionar Puestos
             </button>
+            <ng-template #puestosLocked>
+              <button mat-raised-button color="accent" disabled>
+                <mat-icon>assignment_ind</mat-icon>
+                Próximamente
+              </button>
+            </ng-template>
           </mat-card-actions>
         </mat-card>
 

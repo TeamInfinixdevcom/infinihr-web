@@ -3,6 +3,7 @@ import { LoginComponent } from './components/login/login.component';
 import { TestComponent } from './components/test/test.component';
 import { DebugAuthComponent } from './components/debug-auth/debug-auth.component';
 import { authGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -27,8 +28,8 @@ export const routes: Routes = [
   {
     path: 'admin',
     loadComponent: () => import('./admin/admin.component').then(m => m.AdminComponent),
-    canActivate: [authGuard],
-    data: { roles: ['ADMIN'] },
+  canActivate: [authGuard, adminGuard],
+  data: { roles: ['ADMIN'] },
     children: [
       {
         path: 'dashboard',
@@ -39,11 +40,28 @@ export const routes: Routes = [
         loadComponent: () => import('./admin/usuarios/usuarios-list.component').then(m => m.UsuariosListComponent)
       },
       {
+        path: 'empleados',
+        loadComponent: () => import('./admin/empleados/empleados-list.component').then(m => m.EmpleadosListComponent)
+      },
+      {
+        path: 'departamentos',
+        loadComponent: () => import('./admin/departamentos/departamentos-list.component').then(m => m.DepartamentosListComponent)
+      },
+      {
+        path: 'puestos',
+        loadComponent: () => import('./admin/puestos/puestos-list.component').then(m => m.PuestosListComponent)
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'
       }
     ]
+  },
+  {
+    path: 'empleados/me',
+    loadComponent: () => import('./admin/empleados/empleado-profile.component').then(m => m.EmpleadoProfileComponent),
+    canActivate: [authGuard]
   },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: '**', redirectTo: '/login' }

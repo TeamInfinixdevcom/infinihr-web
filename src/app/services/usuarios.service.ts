@@ -367,15 +367,18 @@ export class UsuariosService {
   }
 
   getDepartamentos(): Observable<Departamento[]> {
-    return this.http.get<Departamento[]>(`${this.apiUrl}/departamentos`, { headers: this.getHeaders() });
+    // Backend exposes departamentos at /api/departamentos in the server
+    return this.http.get<Departamento[]>(`/api/departamentos`, { headers: this.getHeaders() });
   }
 
   getPuestos(): Observable<Puesto[]> {
-    return this.http.get<Puesto[]>(`${this.apiUrl}/puestos`, { headers: this.getHeaders() });
+    // Backend exposes puestos at /api/puestos
+    return this.http.get<Puesto[]>(`/api/puestos`, { headers: this.getHeaders() });
   }
 
   getPuestosPorDepartamento(departamentoId: number): Observable<Puesto[]> {
-    return this.http.get<Puesto[]>(`${this.apiUrl}/puestos/departamento/${departamentoId}`, { 
+    // Common backend path for puestos by departamento
+    return this.http.get<Puesto[]>(`/api/puestos/departamento/${departamentoId}`, { 
       headers: this.getHeaders() 
     });
   }

@@ -106,7 +106,16 @@ export class AuthService {
       const rawToken = response.token.startsWith('Bearer ') ? response.token.substring(7) : response.token;
       localStorage.setItem('token', rawToken);
       localStorage.setItem('username', response.username || '');
-      localStorage.setItem('rol', response.rol || '');
+      // Si backend no devuelve rol, intentar extraerlo del token JWT
+      let rolToStore = response.rol || '';
+      if (!rolToStore) {
+        const extracted = this.extractRolesFromToken(rawToken);
+        if (extracted) {
+          rolToStore = extracted;
+          console.log('🔎 Rol extraído del token:', rolToStore);
+        }
+      }
+      localStorage.setItem('rol', rolToStore);
       
       console.log('✅ Datos guardados en localStorage:', {
         token: rawToken.substring(0, 20) + '...',
@@ -117,6 +126,8 @@ export class AuthService {
       
         // Mapear usuarios conocidos a sus cédulas
         const rolNormalized = (response.rol || '').toString().toLowerCase();
+  // If response.rol is empty but we extracted from token, use that
+  const effectiveRol = (rolToStore || response.rol || '').toString().toLowerCase();
         if (rolNormalized.includes('empleado')) {
           const userToCedula: { [key: string]: string } = {
             'ana.mora': '301234568',
@@ -138,6 +149,37 @@ export class AuthService {
         }
       
       console.log('💾 Datos de autenticación guardados correctamente');
+    }
+  }
+
+  // Try to parse a JWT and extract a role/roles claim into a string
+  private extractRolesFromToken(token: string): string | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return null;
+      }
+      const payload = JSON.parse(atob(parts[1]));
+      // Common claim names
+      const candidates = ['roles', 'role', 'rol', 'authorities', 'authority', 'scp', 'scope'];
+      for (const key of candidates) {
+        if (payload[key]) {
+          const val = payload[key];
+          if (Array.isArray(val)) {
+            return val.join(',');
+          }
+          if (typeof val === 'string') {
+            return val;
+          }
+          if (typeof val === 'object') {
+            return JSON.stringify(val);
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      console.warn('⚠️ No se pudo extraer roles del token:', e);
+      return null;
     }
   }
 
