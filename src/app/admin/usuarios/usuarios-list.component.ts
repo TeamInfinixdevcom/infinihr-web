@@ -221,7 +221,7 @@ export class UsuariosListComponent implements OnInit, OnDestroy {
         const newStatus = !usuario.activo;
         const action = newStatus ? 'activar' : 'desactivar';
 
-        this.usuariosService.toggleUserStatus(usuario.id!, newStatus)
+        this.usuariosService.toggleUsuarioActivo(usuario.id!, newStatus)
             .pipe(takeUntil(this.destroy$))
             .subscribe(
                 () => {
@@ -230,7 +230,22 @@ export class UsuariosListComponent implements OnInit, OnDestroy {
                 },
                 (error: any) => {
                     console.error(`Error al ${action} usuario:`, error);
-                    this.snackBar.open(`Error al ${action} usuario`, 'Cerrar', { duration: 3000, panelClass: ['error-snackbar'] });
+                    
+                    // Mensajes más específicos según el tipo de error
+                    let mensaje = `Error al ${action} usuario`;
+                    
+                    if (error.status === 403) {
+                        mensaje = `No tiene permisos para ${action} este usuario`;
+                        console.warn('⚠️ Error 403 - Problema de permisos, no de autenticación');
+                    } else if (error.status === 401) {
+                        mensaje = `Su sesión ha expirado, por favor inicie sesión nuevamente`;
+                    } else if (error.status === 0) {
+                        mensaje = `Error de conexión con el servidor`;
+                    } else if (error.message && error.message.includes('expirado')) {
+                        mensaje = error.message;
+                    }
+                    
+                    this.snackBar.open(mensaje, 'Cerrar', { duration: 5000, panelClass: ['error-snackbar'] });
                 }
             );
     }

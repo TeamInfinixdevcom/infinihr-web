@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Backend - InfiniHR</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #444; border-radius: 5px; }
+        .result { background: #2d2d2d; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .error { color: #f44336; }
+        .success { color: #4caf50; }
+        .warning { color: #ff9800; }
+        .info { color: #2196f3; }
+        button { background: #007acc; color: white; border: none; padding: 10px 20px; margin: 5px; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a9e; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Backend - InfiniHR</h1>
+        
+        <div class="section">
+            <h2>📋 Estado de localStorage</h2>
+            <button onclick="checkLocalStorage()">Verificar localStorage</button>
+            <div id="localStorage-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>🧪 Test de Conexión al Backend</h2>
+            <button onclick="testBackendConnection()">Probar Conexión</button>
+            <div id="backend-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔑 Test de Autenticación</h2>
+            <button onclick="testAuth()">Probar Auth</button>
+            <div id="auth-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>👥 Test de Usuarios</h2>
+            <button onclick="testUsuarios()">Probar /api/usuarios</button>
+            <div id="usuarios-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>⚡ Test de Activar Usuario</h2>
+            <input type="number" id="usuarioId" placeholder="ID del usuario" value="9">
+            <button onclick="testActivarUsuario()">Probar Activar Usuario</button>
+            <div id="activar-result" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>🧹 Limpiar Sesión</h2>
+            <button onclick="clearSession()" style="background: #f44336;">Limpiar localStorage y Recargar</button>
+        </div>
+    </div>
+
+    <script>
+        function logToDiv(divId, message, type = 'info') {
+            const div = document.getElementById(divId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            div.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+
+        function clearDiv(divId) {
+            document.getElementById(divId).innerHTML = '';
+        }
+
+        function checkLocalStorage() {
+            clearDiv('localStorage-result');
+            
+            const token = localStorage.getItem('token');
+            const username = localStorage.getItem('username');
+            const rol = localStorage.getItem('rol');
+            const empleadoId = localStorage.getItem('empleadoId');
+            
+            logToDiv('localStorage-result', '📋 Verificando localStorage...', 'info');
+            logToDiv('localStorage-result', `Token existe: ${!!token}`, token ? 'success' : 'error');
+            if (token) {
+                logToDiv('localStorage-result', `Token preview: ${token.substring(0, 50)}...`, 'info');
+                logToDiv('localStorage-result', `Token length: ${token.length}`, 'info');
+            }
+            logToDiv('localStorage-result', `Username: ${username || 'NO DISPONIBLE'}`, username ? 'success' : 'warning');
+            logToDiv('localStorage-result', `Rol: ${rol || 'NO DISPONIBLE'}`, rol ? 'success' : 'warning');
+            logToDiv('localStorage-result', `EmpleadoId: ${empleadoId || 'NO DISPONIBLE'}`, empleadoId ? 'success' : 'warning');
+        }
+
+        async function testBackendConnection() {
+            clearDiv('backend-result');
+            logToDiv('backend-result', '🧪 Iniciando test de conexión...', 'info');
+            
+            try {
+                const response = await fetch('/api/empleados', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                logToDiv('backend-result', `Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                logToDiv('backend-result', `Headers: ${JSON.stringify([...response.headers.entries()])}`, 'info');
+                
+                const text = await response.text();
+                logToDiv('backend-result', `Response: ${text.substring(0, 500)}...`, 'info');
+                
+            } catch (error) {
+                logToDiv('backend-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuth() {
+            clearDiv('auth-result');
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                logToDiv('auth-result', '❌ No hay token para probar', 'error');
+                return;
+            }
+            
+            const bearerToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+            logToDiv('auth-result', '🔑 Probando autenticación...', 'info');
+            logToDiv('auth-result', `Using token: ${bearerToken.substring(0, 50)}...`, 'info');
+            
+            try {
+                const response = await fetch('/api/usuarios', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': bearerToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                logToDiv('auth-result', `Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const text = await response.text();
+                logToDiv('auth-result', `Response: ${text.substring(0, 500)}...`, 'info');
+                
+                if (response.status === 403) {
+                    logToDiv('auth-result', '🚫 Error 403: Problema de permisos confirmado', 'error');
+                }
+                
+            } catch (error) {
+                logToDiv('auth-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUsuarios() {
+            clearDiv('usuarios-result');
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                logToDiv('usuarios-result', '❌ No hay token para probar', 'error');
+                return;
+            }
+            
+            const bearerToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+            logToDiv('usuarios-result', '👥 Probando endpoint de usuarios...', 'info');
+            
+            try {
+                const response = await fetch('/api/usuarios', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': bearerToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                logToDiv('usuarios-result', `Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logToDiv('usuarios-result', `✅ Usuarios encontrados: ${data.length}`, 'success');
+                    logToDiv('usuarios-result', `Datos: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    const text = await response.text();
+                    logToDiv('usuarios-result', `❌ Error response: ${text}`, 'error');
+                }
+                
+            } catch (error) {
+                logToDiv('usuarios-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testActivarUsuario() {
+            clearDiv('activar-result');
+            const token = localStorage.getItem('token');
+            const usuarioId = document.getElementById('usuarioId').value;
+            
+            if (!token) {
+                logToDiv('activar-result', '❌ No hay token para probar', 'error');
+                return;
+            }
+            
+            if (!usuarioId) {
+                logToDiv('activar-result', '❌ Ingresa un ID de usuario', 'error');
+                return;
+            }
+            
+            const bearerToken = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+            logToDiv('activar-result', `⚡ Probando activar usuario ${usuarioId}...`, 'info');
+            
+            try {
+                const response = await fetch(`/api/usuarios/${usuarioId}/activo`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': bearerToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ activo: true })
+                });
+                
+                logToDiv('activar-result', `Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const text = await response.text();
+                logToDiv('activar-result', `Response: ${text}`, response.ok ? 'success' : 'error');
+                
+                if (response.status === 403) {
+                    logToDiv('activar-result', '🚫 Error 403: Sin permisos para activar usuario', 'error');
+                    logToDiv('activar-result', '💡 Esto confirma el problema de permisos', 'warning');
+                }
+                
+            } catch (error) {
+                logToDiv('activar-result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function clearSession() {
+            localStorage.clear();
+            alert('✅ localStorage limpiado. La página se recargará.');
+            window.location.reload();
+        }
+
+        // Auto-ejecutar verificación inicial
+        window.onload = function() {
+            checkLocalStorage();
+        };
+    </script>
+</body>
+</html>

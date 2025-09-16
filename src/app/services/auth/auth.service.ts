@@ -192,6 +192,10 @@ export class AuthService {
     return localStorage.getItem('rol');
   }
 
+  getCurrentRole(): string | null {
+    return this.getRol();
+  }
+
   getEmpleadoId(): string | null {
     return localStorage.getItem('empleadoId') || localStorage.getItem('empleadoCedula');
   }
@@ -222,6 +226,18 @@ export class AuthService {
     const token = this.getToken();
     if (token) {
       console.log('🔍 Token encontrado en localStorage');
+      
+      // Verificar si el token es un JWT y si ha expirado
+      if (!token.startsWith('Bearer ')) {
+        const isExpired = this.isTokenExpired(token);
+        if (isExpired) {
+          console.warn('⚠️ Token expirado detectado, limpiando datos...');
+          this.clearAuthData();
+          this.isAuthenticatedSubject.next(false);
+          return;
+        }
+      }
+      
       // Verificar si el token sigue siendo válido
       const username = this.getUsername();
       const empleadoCedula = this.getEmpleadoCedula();
@@ -240,6 +256,85 @@ export class AuthService {
     } else {
       console.log('ℹ️ No hay token en localStorage');
     }
+  }
+
+  // Método para verificar si el token JWT ha expirado
+  private isTokenExpired(token: string): boolean {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        console.warn('⚠️ Token no es un JWT válido');
+        return true;
+      }
+
+      const payload = JSON.parse(atob(parts[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      if (payload.exp && payload.exp < currentTime) {
+        console.warn('⚠️ Token expirado:', {
+          exp: payload.exp,
+          expDate: new Date(payload.exp * 1000),
+          currentTime,
+          currentDate: new Date()
+        });
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('❌ Error al verificar expiración del token:', error);
+      return true; // Si hay error, considerar expirado por seguridad
+    }
+  }
+
+  // Método público para forzar logout cuando se detecta sesión inválida
+  public handleExpiredSession(reason: string = 'Sesión expirada'): void {
+    console.warn(`🚫 [AuthService] ${reason}`);
+    this.clearAuthData();
+    this.isAuthenticatedSubject.next(false);
+  }
+
+  // Método público para limpiar sesión y recargar (útil para debugging)
+  public forceResetSession(): void {
+    console.log('🧹 [AuthService] Forzando reset de sesión...');
+    this.clearAuthData();
+    this.isAuthenticatedSubject.next(false);
+    console.log('🔄 [AuthService] Recargando página...');
+    window.location.reload();
+  }
+
+  // Método temporal para debugging en la consola
+  public debugCurrentState(): void {
+    const token = this.getToken();
+    const username = this.getUsername();
+    const rol = this.getRol();
+    
+    console.log('🔍 [AuthService] Estado actual de autenticación:');
+    console.log('  • Token existe:', !!token);
+    console.log('  • Token preview:', token ? `${token.substring(0, 30)}...` : 'NO HAY TOKEN');
+    console.log('  • Username:', username || 'NO DISPONIBLE');
+    console.log('  • Rol:', rol || 'NO DISPONIBLE');
+    console.log('  • isAuthenticated():', this.isAuthenticated());
+    
+    if (token && !token.startsWith('Bearer ')) {
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const currentTime = Math.floor(Date.now() / 1000);
+          console.log('  • Token payload:', {
+            sub: payload.sub,
+            exp: payload.exp,
+            expDate: payload.exp ? new Date(payload.exp * 1000) : 'No exp',
+            isExpired: payload.exp ? payload.exp < currentTime : 'No exp'
+          });
+        }
+      } catch (e) {
+        console.error('  • Error decodificando token:', e);
+      }
+    }
+    
+    console.log('💡 Para limpiar sesión ejecuta: authService.forceResetSession()');
   }
 
   // Método para validar si la sesión está completa

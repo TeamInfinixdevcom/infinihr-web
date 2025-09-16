@@ -61,6 +61,11 @@ export class AppComponent implements OnInit {
     this.authService.isAuthenticated$.subscribe(isAuthenticated => {
       console.log('Estado de autenticación:', isAuthenticated);
     });
+    
+    // Exponer AuthService globalmente para debugging (solo en desarrollo)
+    (window as any).authService = this.authService;
+    console.log('🔧 [DEBUG] AuthService disponible en window.authService');
+    console.log('💡 Ejecuta window.authService.debugCurrentState() para ver el estado');
   }
   
   logout(): void {

@@ -49,6 +49,14 @@
             🔍 Verificar Backend
             </button>
             
+            <button mat-raised-button color="warn" (click)="clearSession()" style="margin: 5px;">
+            🧹 Limpiar Sesión y Recargar
+            </button>
+            
+            <button mat-raised-button color="primary" (click)="debugAuthState()" style="margin: 5px;">
+            🔍 Ver Estado Completo
+            </button>
+            
             <button mat-raised-button (click)="clearStorage()" style="margin: 5px;">
             Limpiar Storage
             </button>
@@ -415,5 +423,48 @@
                 });
             }, index * 500);
         });
+    }
+
+    clearSession(): void {
+        console.log('🧹 Limpiando sesión manualmente...');
+        this.addLog('info', '🧹 Limpiando sesión y recargando página...');
+        
+        // Limpiar localStorage
+        localStorage.clear();
+        
+        // Recargar página para que la aplicación se reinicie
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+
+    debugAuthState(): void {
+        console.log('🔍 === ESTADO COMPLETO DE AUTENTICACIÓN ===');
+        
+        // Datos de localStorage
+        const token = localStorage.getItem('token');
+        const username = localStorage.getItem('username');
+        const rol = localStorage.getItem('rol');
+        const empleadoId = localStorage.getItem('empleadoId');
+        
+        console.log('📋 Datos en localStorage:');
+        console.log('  • Token existe:', !!token);
+        console.log('  • Token preview:', token ? `${token.substring(0, 50)}...` : 'NO TOKEN');
+        console.log('  • Username:', username || 'NO USERNAME');
+        console.log('  • Rol:', rol || 'NO ROL');
+        console.log('  • EmpleadoId:', empleadoId || 'NO EMPLEADO ID');
+        
+        // Estado del AuthService
+        if ((window as any).authService) {
+            (window as any).authService.debugCurrentState();
+        }
+        
+        // Logs en la interfaz
+        this.addLog('info', `🔍 Token: ${!!token ? 'SÍ' : 'NO'}`);
+        this.addLog('info', `👤 Usuario: ${username || 'NO DISPONIBLE'}`);
+        this.addLog('info', `🔑 Rol: ${rol || 'NO DISPONIBLE'}`);
+        this.addLog('info', `📋 EmpleadoId: ${empleadoId || 'NO DISPONIBLE'}`);
+        
+        console.log('🔍 === FIN ESTADO DE AUTENTICACIÓN ===');
     }
 }
