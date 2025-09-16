@@ -116,7 +116,8 @@ export class LoginComponent {
     private snackBar: MatSnackBar,
     private http: HttpClient
   ) {
-    this.checkBackend();
+    // Removemos la verificación automática del backend para evitar errores 403 al cargar la página
+    // Los usuarios pueden verificar manualmente con el botón si lo necesitan
   }
 
   checkBackend(): void {
@@ -128,14 +129,15 @@ export class LoginComponent {
       next: () => {
         this.backendStatus = 'online';
         this.backendStatusText = '✅ Online';
-        this.snackBar.open('Servidor conectado', 'OK', { duration: 3000 });
+        this.snackBar.open('Servidor conectado y accesible', 'OK', { duration: 3000 });
       },
       error: (error: HttpErrorResponse) => {
         if (error.status === 403) {
-          // Error 403 significa que el servidor está online pero requiere autenticación
+          // Error 403 significa que el servidor está online pero requiere autenticación (ESTO ES NORMAL)
           this.backendStatus = 'online';
           this.backendStatusText = '✅ Online (Requiere autenticación)';
-          console.log('✅ Backend online - respuesta 403 esperada');
+          console.log('✅ Backend online - respuesta 403 esperada para endpoint protegido');
+          this.snackBar.open('Servidor online - Funcionando correctamente', 'OK', { duration: 3000 });
         } else if (error.status === 0) {
           this.backendStatus = 'offline';
           this.backendStatusText = '❌ Offline';

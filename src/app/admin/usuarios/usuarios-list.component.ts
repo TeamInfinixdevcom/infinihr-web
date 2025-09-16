@@ -14,6 +14,7 @@ import { Subject, takeUntil } from 'rxjs';
 
 import { UsuariosService, UsuarioCompleto } from '../../services/usuarios.service';
 import { UsuarioDialogComponent } from './usuario-dialog.component';
+import { AuthService } from '../../services/auth/auth.service';
 
 @Component({
     selector: 'app-usuarios-list',
@@ -38,7 +39,7 @@ import { UsuarioDialogComponent } from './usuario-dialog.component';
                     <mat-toolbar color="primary">
                         <span>Gestión de Usuarios</span>
                         <span class="spacer"></span>
-                        <button mat-raised-button color="accent" (click)="openCreateDialog()">
+                        <button *ngIf="isAdmin()" mat-raised-button color="accent" (click)="openCreateDialog()">
                             <mat-icon>add</mat-icon>
                             Nuevo Usuario
                         </button>
@@ -102,15 +103,18 @@ import { UsuarioDialogComponent } from './usuario-dialog.component';
                         <ng-container matColumnDef="actions">
                             <th mat-header-cell *matHeaderCellDef>Acciones</th>
                             <td mat-cell *matCellDef="let usuario">
-                                <button mat-icon-button color="primary" (click)="openEditDialog(usuario)" matTooltip="Editar usuario">
-                                    <mat-icon>edit</mat-icon>
-                                </button>
-                                <button mat-icon-button [color]="usuario.activo ? 'warn' : 'accent'" (click)="toggleUserStatus(usuario)" [matTooltip]="usuario.activo ? 'Desactivar usuario' : 'Activar usuario'">
-                                    <mat-icon>{{ usuario.activo ? 'lock' : 'lock_open' }}</mat-icon>
-                                </button>
-                                <button mat-icon-button color="warn" (click)="deleteUser(usuario)" matTooltip="Eliminar usuario" [disabled]="usuario.rol === 'ADMIN'">
-                                    <mat-icon>delete</mat-icon>
-                                </button>
+                                <div *ngIf="isAdmin()">
+                                    <button mat-icon-button color="primary" (click)="openEditDialog(usuario)" matTooltip="Editar usuario">
+                                        <mat-icon>edit</mat-icon>
+                                    </button>
+                                    <button mat-icon-button [color]="usuario.activo ? 'warn' : 'accent'" (click)="toggleUserStatus(usuario)" [matTooltip]="usuario.activo ? 'Desactivar usuario' : 'Activar usuario'">
+                                        <mat-icon>{{ usuario.activo ? 'lock' : 'lock_open' }}</mat-icon>
+                                    </button>
+                                    <button mat-icon-button color="warn" (click)="deleteUser(usuario)" matTooltip="Eliminar usuario" [disabled]="usuario.rol === 'ADMIN'">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                </div>
+                                <span *ngIf="!isAdmin()" class="no-actions">Sin permisos</span>
                             </td>
                         </ng-container>
 
@@ -140,6 +144,7 @@ import { UsuarioDialogComponent } from './usuario-dialog.component';
             .mat-column-actions { width: 120px; text-align: center; }
             .mat-column-id { width: 60px; }
             .mat-column-role, .mat-column-activo { width: 100px; text-align: center; }
+            .no-actions { color: #999; font-style: italic; font-size: 12px; }
         `
     ]
 })
@@ -152,7 +157,8 @@ export class UsuariosListComponent implements OnInit, OnDestroy {
     constructor(
         private usuariosService: UsuariosService,
         private dialog: MatDialog,
-        private snackBar: MatSnackBar
+        private snackBar: MatSnackBar,
+        private authService: AuthService
     ) {}
 
     ngOnInit(): void {
@@ -162,6 +168,17 @@ export class UsuariosListComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void {
         this.destroy$.next();
         this.destroy$.complete();
+    }
+
+    isAdmin(): boolean {
+        const isAdminResult = this.authService.isAdmin();
+        console.log('🔍 [UsuariosListComponent] Verificando permisos de admin:', {
+            isAdmin: isAdminResult,
+            authService: this.authService,
+            rol: this.authService.getRol(),
+            username: this.authService.getUsername()
+        });
+        return isAdminResult;
     }
 
     loadUsuarios(): void {

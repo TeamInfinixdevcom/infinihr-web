@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../services/auth/auth.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -22,7 +23,8 @@ import { RouterLink } from '@angular/router';
       
       <div class="dashboard-grid">
         
-        <mat-card class="dashboard-card">
+        <!-- Solo para ADMIN: Gestión de Usuarios -->
+        <mat-card class="dashboard-card" *ngIf="isAdmin()">
           <mat-card-header>
             <mat-icon mat-card-avatar class="card-icon users-icon">people</mat-icon>
             <mat-card-title>Usuarios</mat-card-title>
@@ -56,7 +58,8 @@ import { RouterLink } from '@angular/router';
           </mat-card-actions>
         </mat-card>
 
-        <mat-card class="dashboard-card">
+        <!-- Solo para ADMIN: Departamentos -->
+        <mat-card class="dashboard-card" *ngIf="isAdmin()">
           <mat-card-header>
             <mat-icon mat-card-avatar class="card-icon departments-icon">business</mat-icon>
             <mat-card-title>Departamentos</mat-card-title>
@@ -73,7 +76,8 @@ import { RouterLink } from '@angular/router';
           </mat-card-actions>
         </mat-card>
 
-        <mat-card class="dashboard-card">
+        <!-- Solo para ADMIN: Puestos -->
+        <mat-card class="dashboard-card" *ngIf="isAdmin()">
           <mat-card-header>
             <mat-icon mat-card-avatar class="card-icon positions-icon">work_outline</mat-icon>
             <mat-card-title>Puestos</mat-card-title>
@@ -107,7 +111,8 @@ import { RouterLink } from '@angular/router';
           </mat-card-actions>
         </mat-card>
 
-        <mat-card class="dashboard-card">
+        <!-- Solo para ADMIN: Reportes -->
+        <mat-card class="dashboard-card" *ngIf="isAdmin()">
           <mat-card-header>
             <mat-icon mat-card-avatar class="card-icon reports-icon">assessment</mat-icon>
             <mat-card-title>Reportes</mat-card-title>
@@ -235,9 +240,13 @@ import { RouterLink } from '@angular/router';
 })
 export class AdminDashboardComponent implements OnInit {
 
-  constructor() { }
+  constructor(private authService: AuthService) { }
 
   ngOnInit(): void {
+  }
+
+  isAdmin(): boolean {
+    return this.authService.isAdmin();
   }
 
 }

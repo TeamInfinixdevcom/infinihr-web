@@ -92,12 +92,28 @@ export class AuthService {
 
   private storeAuthData(response: AuthResponse): void {
     console.log('🔒 Guardando datos de autenticación:', response);
+    console.log('🔍 [DEBUG] Análisis detallado de la respuesta:', {
+      hasToken: !!response.token,
+      hasUsername: !!response.username,
+      hasRol: !!response.rol,
+      rolValue: response.rol,
+      rolType: typeof response.rol,
+      completeResponse: response
+    });
+    
     if (response.token) {
       // Almacenar token crudo (sin prefijo). El interceptor agrega 'Bearer ' al enviar.
       const rawToken = response.token.startsWith('Bearer ') ? response.token.substring(7) : response.token;
       localStorage.setItem('token', rawToken);
       localStorage.setItem('username', response.username || '');
       localStorage.setItem('rol', response.rol || '');
+      
+      console.log('✅ Datos guardados en localStorage:', {
+        token: rawToken.substring(0, 20) + '...',
+        username: response.username,
+        rol: response.rol,
+        localStorage_rol: localStorage.getItem('rol')
+      });
       
         // Mapear usuarios conocidos a sus cédulas
         const rolNormalized = (response.rol || '').toString().toLowerCase();
@@ -194,6 +210,47 @@ export class AuthService {
 
   getCurrentRole(): string | null {
     return this.getRol();
+  }
+
+  hasRole(role: string): boolean {
+    const currentRole = this.getRol();
+    if (!currentRole) {
+      return false;
+    }
+
+    // Normalizar valores posibles que vengan del backend:
+    // - JSON string array: "[\"ADMIN\"]"
+    // - Comma/space separated: "ADMIN,USER" or "ADMIN USER"
+    // - Prefijos: ROLE_ADMIN
+    // - Diferente case: "admin"
+    let normalized = currentRole;
+    try {
+      const parsed = JSON.parse(currentRole);
+      if (Array.isArray(parsed)) {
+        normalized = parsed.join(',');
+      }
+    } catch (e) {
+      // not JSON -> ignore
+    }
+
+    normalized = String(normalized);
+    // Remove common prefixes and quotes/brackets
+    normalized = normalized.replace(/ROLE_/gi, '');
+    normalized = normalized.replace(/[\[\]"]+/g, '');
+
+    const tokens = normalized
+      .split(/[,;\s]+/)
+      .map(t => t.trim())
+      .filter(t => t.length > 0)
+      .map(t => t.toLowerCase());
+
+    return tokens.includes(role.toLowerCase());
+  }
+
+  isAdmin(): boolean {
+    const is = this.hasRole('ADMIN');
+    console.log('🔍 [DEBUG] isAdmin check ->', { is, rolRaw: this.getRol(), username: this.getUsername() });
+    return is;
   }
 
   getEmpleadoId(): string | null {
